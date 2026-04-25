@@ -4,7 +4,39 @@ import { NextResponse } from 'next/server';
 
 const EXCLUDED_SUBTYPES = new Set(['student', 'ira', 'roth', 'brokerage', 'cash management', '401k', '403b', 'pension', 'retirement']);
 
-export async function GET() {
+async function fetchAllTransactions(accessToken, startDate, endDate) {
+  const allTransactions = [];
+  let accounts = [];
+  const count = 500;
+  let offset = 0;
+
+  while (true) {
+    const res = await plaidClient.transactionsGet({
+      access_token: accessToken,
+      start_date: startDate,
+      end_date: endDate,
+      options: { count, offset },
+    });
+
+    if (offset === 0) {
+      accounts = res.data.accounts;
+    }
+
+    allTransactions.push(...res.data.transactions);
+
+    const total = res.data.total_transactions;
+    offset += res.data.transactions.length;
+
+    if (offset >= total) break;
+  }
+
+  return { transactions: allTransactions, accounts };
+}
+
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const forceResync = searchParams.get('resync') === 'true';
+
   const { data: tokenRows } = await supabase
     .from('access_tokens')
     .select('token');
@@ -14,24 +46,20 @@ export async function GET() {
 
   for (const row of tokenRows) {
     try {
-      const res = await plaidClient.transactionsGet({
-        access_token: row.token,
-        start_date: start,
-        end_date: end,
-      });
+      const { transactions, accounts } = await fetchAllTransactions(row.token, start, end);
 
       const accountMap = {};
       const excludedAccountIds = new Set(
-        res.data.accounts
+        accounts
           .filter(a => EXCLUDED_SUBTYPES.has(a.subtype))
           .map(a => a.account_id)
       );
 
-      for (const acct of res.data.accounts) {
+      for (const acct of accounts) {
         accountMap[acct.account_id] = acct.mask ? `${acct.name} ···${acct.mask}` : acct.name;
       }
 
-      const settled = res.data.transactions.filter(
+      const settled = transactions.filter(
         t => !t.pending && !excludedAccountIds.has(t.account_id)
       );
 
@@ -56,6 +84,18 @@ export async function GET() {
             label_archived: false,
             category_archived: false,
           });
+        }
+        // If resync: update safe Plaid fields only, never touch user edits
+        else if (forceResync) {
+          await supabase
+            .from('transactions')
+            .update({
+              date: t.date,
+              merchant: t.merchant_name || t.name,
+              amount: t.amount,
+              account: accountMap[t.account_id] || null,
+            })
+            .eq('id', t.transaction_id);
         }
       }
     } catch (e) {
