@@ -18,29 +18,17 @@ async function fetchAllTransactions(accessToken, startDate, endDate) {
       options: { count, offset },
     });
 
-    if (offset === 0) {
-      accounts = res.data.accounts;
-    }
-
+    if (offset === 0) accounts = res.data.accounts;
     allTransactions.push(...res.data.transactions);
-
-    const total = res.data.total_transactions;
     offset += res.data.transactions.length;
-
-    if (offset >= total) break;
+    if (offset >= res.data.total_transactions) break;
   }
 
   return { transactions: allTransactions, accounts };
 }
 
 export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const forceResync = searchParams.get('resync') === 'true';
-
-  const { data: tokenRows } = await supabase
-    .from('access_tokens')
-    .select('token');
-
+  const { data: tokenRows } = await supabase.from('access_tokens').select('token');
   const end = new Date().toISOString().split('T')[0];
   const start = '2026-01-01';
 
@@ -50,53 +38,53 @@ export async function GET(req) {
 
       const accountMap = {};
       const excludedAccountIds = new Set(
-        accounts
-          .filter(a => EXCLUDED_SUBTYPES.has(a.subtype))
-          .map(a => a.account_id)
+        accounts.filter(a => EXCLUDED_SUBTYPES.has(a.subtype)).map(a => a.account_id)
       );
-
       for (const acct of accounts) {
         accountMap[acct.account_id] = acct.mask ? `${acct.name} ···${acct.mask}` : acct.name;
       }
 
-      const settled = transactions.filter(
-        t => !t.pending && !excludedAccountIds.has(t.account_id)
-      );
+      const settled = transactions.filter(t => !t.pending && !excludedAccountIds.has(t.account_id));
 
       for (const t of settled) {
-        const { data: existing } = await supabase
+        const accountName = accountMap[t.account_id] || null;
+        const merchant = t.merchant_name || t.name;
+
+        // Check by Plaid transaction_id first
+        const { data: existingById } = await supabase
           .from('transactions')
           .select('id')
           .eq('id', t.transaction_id)
           .single();
 
-        if (!existing) {
-          await supabase.from('transactions').insert({
-            id: t.transaction_id,
-            date: t.date,
-            merchant: t.merchant_name || t.name,
-            amount: t.amount,
-            account: accountMap[t.account_id] || null,
-            label: null,
-            category: null,
-            notes: '',
-            archived: false,
-            label_archived: false,
-            category_archived: false,
-          });
-        }
-        // If resync: update safe Plaid fields only, never touch user edits
-        else if (forceResync) {
-          await supabase
-            .from('transactions')
-            .update({
-              date: t.date,
-              merchant: t.merchant_name || t.name,
-              amount: t.amount,
-              account: accountMap[t.account_id] || null,
-            })
-            .eq('id', t.transaction_id);
-        }
+        if (existingById) continue;
+
+        // Also check by account + date + merchant + amount to catch SoFi duplicate IDs
+        const { data: existingByContent } = await supabase
+          .from('transactions')
+          .select('id')
+          .eq('account', accountName)
+          .eq('date', t.date)
+          .eq('merchant', merchant)
+          .eq('amount', t.amount)
+          .maybeSingle();
+
+        if (existingByContent) continue;
+
+        // Safe to insert
+        await supabase.from('transactions').insert({
+          id: t.transaction_id,
+          date: t.date,
+          merchant,
+          amount: t.amount,
+          account: accountName,
+          label: null,
+          category: null,
+          notes: '',
+          archived: false,
+          label_archived: false,
+          category_archived: false,
+        });
       }
     } catch (e) {
       console.error('Bad token, skipping:', row.token, e);
