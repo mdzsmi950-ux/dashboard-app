@@ -1,13 +1,132 @@
 'use client';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import type { Txn, Account, Bill, BudgetIncome, ManualAccount, Category, Label } from './components/types';
+import { fmt, fmtSigned, today, myShare, incomeShare, catColors, labelColors, monthLabel } from './components/constants';
 import BudgetAccount from './components/BudgetAccount';
-import TransactionsTab from './components/TransactionsTab';
-import SpendingTab from './components/SpendingTab';
-import BalancesTab from './components/BalancesTab';
-import ArchiveTab from './components/ArchiveTab';
-import type { Txn, Account, Bill, BudgetIncome, ManualAccount, Category } from './components/types';
-import { fmt, fmtSigned, today, myShare, incomeShare, catColors } from './components/constants';
 
+// ── Icons ──────────────────────────────────────────────────────────────────
+const IconSummary = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+  </svg>
+);
+const IconTxn = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+    <rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+  </svg>
+);
+const IconBalance = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <rect x="2" y="5" width="20" height="14" rx="2"/>
+    <line x1="2" y1="10" x2="22" y2="10"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/>
+  </svg>
+);
+const IconArchive = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8"/>
+    <line x1="10" y1="13" x2="14" y2="13"/>
+  </svg>
+);
+const IconBudget = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+  </svg>
+);
+
+// ── Styles ─────────────────────────────────────────────────────────────────
+const TABS = [
+  { id: 'summary', label: 'Summary', Icon: IconSummary },
+  { id: 'transactions', label: 'Transactions', Icon: IconTxn },
+  { id: 'balances', label: 'Balances', Icon: IconBalance },
+  { id: 'budget', label: 'Budget', Icon: IconBudget },
+  { id: 'archive', label: 'Archive', Icon: IconArchive },
+];
+
+const pill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
+  fontSize: 11, padding: '3px 8px', borderRadius: 20, cursor: 'pointer',
+  border: `0.5px solid ${active ? colors.border : '#e8e8e8'}`,
+  background: active ? colors.bg : 'transparent',
+  color: active ? colors.color : '#bbb',
+  fontWeight: active ? 500 : 400,
+} as const);
+
+// ── Pull to refresh hook ───────────────────────────────────────────────────
+function usePullToRefresh(onRefresh: () => Promise<void>) {
+  const [pulling, setPulling] = useState(false);
+  const startY = useRef(0);
+  const el = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const node = el.current;
+    if (!node) return;
+    const onTouchStart = (e: TouchEvent) => { startY.current = e.touches[0].clientY; };
+    const onTouchEnd = async (e: TouchEvent) => {
+      const dy = e.changedTouches[0].clientY - startY.current;
+      if (dy > 80 && node.scrollTop === 0) { setPulling(true); await onRefresh(); setPulling(false); }
+    };
+    node.addEventListener('touchstart', onTouchStart, { passive: true });
+    node.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => { node.removeEventListener('touchstart', onTouchStart); node.removeEventListener('touchend', onTouchEnd); };
+  }, [onRefresh]);
+
+  return { el, pulling };
+}
+
+// ── TxnCard ────────────────────────────────────────────────────────────────
+function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: string, v: any) => void }) {
+  return (
+    <div style={{ padding: '14px 0', borderBottom: '0.5px solid #f0f0f0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
+          <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a', flexShrink: 0 }}>
+          {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        {(['Maddie', 'Nick', 'Joint', 'Ignore'] as Label[]).map(l => (
+          <button key={l} onClick={(e) => { e.preventDefault(); updateField(t.id, 'label', l); }}
+            style={pill(t.label === l, labelColors[l])}>{l}</button>
+        ))}
+        <span style={{ color: '#e8e8e8', fontSize: 11, padding: '3px 2px' }}>·</span>
+        {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
+          const disabled = t.label === 'Nick' || t.label === 'Ignore' || !t.label;
+          return (
+            <button key={cat} onClick={(e) => { e.preventDefault(); if (!disabled) updateField(t.id, 'category', cat); }}
+              style={pill(!disabled && t.category === cat, catColors[cat])}>{cat}</button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── ArchiveCard ────────────────────────────────────────────────────────────
+function ArchiveCard({ t }: { t: Txn }) {
+  return (
+    <div style={{ padding: '12px 0', borderBottom: '0.5px solid #f0f0f0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
+          <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+            {t.label && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: labelColors[t.label].bg, color: labelColors[t.label].color }}>{t.label}</span>}
+            {t.category && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: catColors[t.category].bg, color: catColors[t.category].color }}>{t.category}</span>}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
+          <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ───────────────────────────────────────────────────────────────
 export default function App() {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [archivedTxns, setArchivedTxns] = useState<Txn[]>([]);
@@ -17,7 +136,8 @@ export default function App() {
   const [manualAccountsDb, setManualAccountsDb] = useState<ManualAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [linked, setLinked] = useState(false);
-  const [tab, setTab] = useState('budget');
+  const [tab, setTab] = useState('transactions');
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -31,28 +151,29 @@ export default function App() {
 
   const fetchTxns = async () => {
     setLoading(true);
-    try { const data = await fetch('/api/transactions').then(r => r.json()); setTxns(data); localStorage.setItem('cache_txns', JSON.stringify(data)); } catch {}
+    try { const d = await fetch('/api/transactions').then(r => r.json()); setTxns(d); localStorage.setItem('cache_txns', JSON.stringify(d)); } catch {}
     setLoading(false);
   };
   const fetchAccounts = async () => {
-    try { const data = await fetch('/api/balances').then(r => r.json()); setAccounts(data); localStorage.setItem('cache_accounts', JSON.stringify(data)); } catch {}
+    try { const d = await fetch('/api/balances').then(r => r.json()); setAccounts(d); localStorage.setItem('cache_accounts', JSON.stringify(d)); } catch {}
   };
   const fetchManualAccounts = async () => {
-    try { const data = await fetch('/api/manual-accounts').then(r => r.json()); setManualAccountsDb(data); } catch {}
+    try { const d = await fetch('/api/manual-accounts').then(r => r.json()); setManualAccountsDb(d); } catch {}
   };
   const fetchBudget = useCallback(async () => {
-    try { const { bills, income } = await fetch('/api/budget').then(r => r.json()); setBills(bills); setIncome(income); localStorage.setItem('cache_bills', JSON.stringify(bills)); localStorage.setItem('cache_income', JSON.stringify(income)); } catch {}
+    try { const { bills, income } = await fetch('/api/budget').then(r => r.json()); setBills(bills); setIncome(income); } catch {}
   }, []);
   const fetchArchived = useCallback(async () => {
-    try { const data = await fetch('/api/transactions/archived').then(r => r.json()); setArchivedTxns(data); localStorage.setItem('cache_archived', JSON.stringify(data)); } catch {}
+    try { const d = await fetch('/api/transactions/archived').then(r => r.json()); setArchivedTxns(d); localStorage.setItem('cache_archived', JSON.stringify(d)); } catch {}
   }, []);
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([fetchTxns(), fetchAccounts(), fetchArchived(), fetchManualAccounts()]);
+  }, [fetchArchived]);
 
   useEffect(() => { fetchBudget(); fetchArchived(); fetchAccounts(); fetchManualAccounts(); }, [fetchBudget, fetchArchived]);
 
-  const budgetApi = async (action: string, table: string, data: any) => {
-    await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, table, data }) });
-    fetchBudget();
-  };
+  const { el: scrollRef, pulling } = usePullToRefresh(refreshAll);
 
   const connectBank = async () => {
     const { link_token } = await fetch('/api/create-link-token', { method: 'POST' }).then(r => r.json());
@@ -60,7 +181,7 @@ export default function App() {
       token: link_token,
       onSuccess: async (public_token: string) => {
         await fetch('/api/exchange-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ public_token }) });
-        setLinked(true); fetchTxns(); fetchAccounts(); fetchArchived();
+        setLinked(true); refreshAll();
       },
     });
     handler.open();
@@ -79,26 +200,9 @@ export default function App() {
     fetchTxns(); fetchArchived();
   };
 
-  const addManualAccount = async (name: string) => {
-    if (!name.trim() || manualAccountsDb.find(ma => ma.name === name.trim())) return;
-    await fetch('/api/manual-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', name: name.trim(), balance: 0, balance_date: today }) });
-    await fetchManualAccounts();
-  };
-
-  const addManualTxn = async (newTxn: { date: string; merchant: string; amount: string; account: string }) => {
-    if (!newTxn.merchant || !newTxn.amount || !newTxn.date) return;
-    const txn: Txn = { id: `manual-${Date.now()}`, date: newTxn.date, merchant: newTxn.merchant, amount: parseFloat(newTxn.amount), account: newTxn.account || null, label: null, category: null, notes: '', archived: false, label_archived: false, category_archived: false };
-    await fetch('/api/transactions/manual', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(txn) });
-    if (newTxn.account && !manualAccountsDb.find(ma => ma.name === newTxn.account)) {
-      await fetch('/api/manual-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', name: newTxn.account, balance: 0, balance_date: today }) });
-      fetchManualAccounts();
-    }
-    setTxns(prev => [txn, ...prev]);
-  };
-
-  const updateManualBalance = async (id: number, balance: number) => {
-    await fetch('/api/manual-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update_balance', id, balance, balance_date: today }) });
-    fetchManualAccounts();
+  const budgetApi = async (action: string, table: string, data: any) => {
+    await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, table, data }) });
+    fetchBudget();
   };
 
   const allTxns = useMemo(() => {
@@ -106,36 +210,56 @@ export default function App() {
     return [...txns, ...archivedTxns].filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
   }, [txns, archivedTxns]);
 
-  const labelArchivedMonths = useMemo(() => {
+  // Available months for picker
+  const availableMonths = useMemo(() => {
     const months = new Set<string>();
-    archivedTxns.forEach(t => months.add(t.date.slice(0, 7)));
-    return months;
-  }, [archivedTxns]);
-
-  const ytdStats = useMemo(() => ({
-    total: allTxns.reduce((s, t) => s + myShare(t), 0),
-    income: allTxns.reduce((s, t) => s + incomeShare(t), 0),
-  }), [allTxns]);
-
-  const ytdCatTotals = useMemo(() => {
-    const map: Record<string, number> = {};
-    allTxns.filter(t => t.label === 'Maddie' || t.label === 'Joint').forEach(t => { if (!t.category) return; map[t.category] = (map[t.category] || 0) + myShare(t); });
-    return map;
+    allTxns.forEach(t => months.add(t.date.slice(0, 7)));
+    return Array.from(months).sort((a, b) => b.localeCompare(a));
   }, [allTxns]);
 
-  const SPENDABLE_SUBTYPES = new Set(['savings', 'checking']);
-  const EXCLUDED_MASKS = new Set(['7070']);
-  const positiveAccounts = accounts.filter(a => SPENDABLE_SUBTYPES.has(a.subtype) && !EXCLUDED_MASKS.has(a.mask || ''));
+  // Filtered transactions for selected month
+  const filteredByMonth = useMemo(() => {
+    if (!selectedMonth) return allTxns;
+    return allTxns.filter(t => t.date.startsWith(selectedMonth));
+  }, [allTxns, selectedMonth]);
+
+  const stats = useMemo(() => ({
+    total: filteredByMonth.reduce((s, t) => s + myShare(t), 0),
+    income: filteredByMonth.reduce((s, t) => s + incomeShare(t), 0),
+    needs: filteredByMonth.filter(t => t.category === 'Needs').reduce((s, t) => s + myShare(t), 0),
+    wants: filteredByMonth.filter(t => t.category === 'Wants').reduce((s, t) => s + myShare(t), 0),
+    impulse: filteredByMonth.filter(t => t.category === 'Impulse').reduce((s, t) => s + myShare(t), 0),
+  }), [filteredByMonth]);
+
+  const SPENDABLE = new Set(['savings', 'checking']);
+  const EXCL_MASKS = new Set(['7070']);
+  const positiveAccounts = accounts.filter(a => SPENDABLE.has(a.subtype) && !EXCL_MASKS.has(a.mask || ''));
   const negativeAccounts = accounts.filter(a => (a.type === 'credit' || a.type === 'loan') && a.subtype !== 'student');
-  const manualDebtTotal = useMemo(() => {
-    const allTxnAccounts = new Set([...txns, ...archivedTxns].map(t => t.account).filter(Boolean));
-    return manualAccountsDb.filter(ma => allTxnAccounts.has(ma.name)).reduce((s, ma) => {
-      const laterTxns = [...txns, ...archivedTxns].filter(t => t.account === ma.name && t.date > ma.balance_date);
-      return s + ma.balance + laterTxns.reduce((ss, t) => ss + t.amount, 0);
-    }, 0);
+  const displayPositive = accounts.filter(a => a.type !== 'credit' && a.type !== 'loan');
+  const displayNegative = accounts.filter(a => a.type === 'credit' || a.type === 'loan');
+
+  const manualWithBalance = useMemo(() => {
+    const accts = new Set([...txns, ...archivedTxns].map(t => t.account).filter(Boolean));
+    return manualAccountsDb.filter(ma => accts.has(ma.name)).map(ma => {
+      const later = [...txns, ...archivedTxns].filter(t => t.account === ma.name && t.date > ma.balance_date);
+      return { ...ma, effectiveBalance: ma.balance + later.reduce((s, t) => s + t.amount, 0) };
+    });
   }, [manualAccountsDb, txns, archivedTxns]);
 
-  const netWorth = positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) - negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) - manualDebtTotal;
+  const manualDebt = manualWithBalance.reduce((s, a) => s + a.effectiveBalance, 0);
+  const netWorth = positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0)
+    - negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) - manualDebt;
+
+  // Txns by month for transactions tab
+  const txnsByMonth = useMemo(() => {
+    const map: Record<string, Txn[]> = {};
+    txns.forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
+    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [txns]);
+
+  const isFullyLabeled = (mTxns: Txn[]) => mTxns.every(t => t.label !== null);
+  const labelArchivedMonths = useMemo(() => { const s = new Set<string>(); archivedTxns.forEach(t => s.add(t.date.slice(0, 7))); return s; }, [archivedTxns]);
+  const isFullyCategorized = (mTxns: Txn[]) => mTxns.every(t => t.category !== null || t.label === 'Ignore' || t.label === 'Nick');
 
   const maddieBills = bills.filter(b => b.account === 'maddie');
   const maddieIncome = income.filter(p => p.account === 'maddie');
@@ -157,72 +281,255 @@ export default function App() {
   const handleAddBill = (account: string) => (bill: any) => budgetApi('upsert', 'budget_bills', { id: Date.now(), account, ...bill, paid: false });
   const handleAddIncome = (account: string) => (inc: any) => budgetApi('upsert', 'budget_income', { id: Date.now(), account, ...inc });
 
+  const TAB_H = 72;
+  const contentStyle: React.CSSProperties = {
+    flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+    paddingBottom: TAB_H + 16,
+  };
+
   return (
     <>
       <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async />
-      <div style={{ fontFamily: 'sans-serif', maxWidth: 860, margin: '0 auto', padding: '1rem', paddingTop: 'max(1rem, env(safe-area-inset-top))' as any, overflowAnchor: 'none' as const }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#fff', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h1 style={{ fontSize: 20, fontWeight: 500, margin: 0 }}>Maddie's Dashboard</h1>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={connectBank} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, border: '0.5px solid #ccc', cursor: 'pointer', background: 'white' }}>{linked ? 'Reconnect' : 'Connect'}</button>
-            <button onClick={() => { fetchTxns(); fetchAccounts(); fetchArchived(); fetchManualAccounts(); }} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, border: '0.5px solid #ccc', cursor: 'pointer', background: 'white' }}>Refresh</button>
-          </div>
-        </div>
+        {/* Pull indicator */}
+        {pulling && (
+          <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: '#aaa' }}>Refreshing…</div>
+        )}
 
-        <div style={{ marginBottom: '1rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginBottom: 6 }}>
-            <div style={{ background: '#E8EEF4', borderRadius: 8, padding: '10px 12px', border: '0.5px solid #B0C0D0' }}>
-              <p style={{ fontSize: 10, color: '#3A5068', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assets</p>
-              <p style={{ fontSize: 16, fontWeight: 500, margin: 0, color: '#3A5068' }}>{fmt(positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0))}</p>
-            </div>
-            <div style={{ background: '#F4E8EE', borderRadius: 8, padding: '10px 12px', border: '0.5px solid #D0B0BC' }}>
-              <p style={{ fontSize: 10, color: '#683A52', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Debts</p>
-              <p style={{ fontSize: 16, fontWeight: 500, margin: 0, color: '#683A52' }}>{fmt(negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) + manualDebtTotal)}</p>
-            </div>
-            <div style={{ background: '#f5f5f5', borderRadius: 8, padding: '10px 12px' }}>
-              <p style={{ fontSize: 10, color: '#888', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Net</p>
-              <p style={{ fontSize: 16, fontWeight: 500, margin: 0, color: netWorth >= 0 ? '#3A6850' : '#b04040' }}>{fmtSigned(netWorth)}</p>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 }}>
-            <div style={{ background: '#D6E4EE', borderRadius: 8, padding: '10px 12px', border: '0.5px solid #9AB0C4' }}>
-              <p style={{ fontSize: 10, color: '#3A5468', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total YTD</p>
-              <p style={{ fontSize: 16, fontWeight: 500, margin: 0, color: '#3A5468' }}>{fmt(ytdStats.total)}</p>
-            </div>
-            <div style={{ background: '#E8F4E8', borderRadius: 8, padding: '10px 12px', border: '0.5px solid #A0D0A0' }}>
-              <p style={{ fontSize: 10, color: '#2A6030', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Income YTD</p>
-              <p style={{ fontSize: 16, fontWeight: 500, margin: 0, color: '#2A6030' }}>{fmt(ytdStats.income)}</p>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
-            {(['Needs', 'Wants', 'Impulse'] as Category[]).map(cat => (
-              <div key={cat} style={{ background: catColors[cat].bg, borderRadius: 8, padding: '10px 12px', border: `0.5px solid ${catColors[cat].border}` }}>
-                <p style={{ fontSize: 10, color: catColors[cat].color, margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{cat} YTD</p>
-                <p style={{ fontSize: 16, fontWeight: 500, margin: 0, color: catColors[cat].color }}>{fmt(ytdCatTotals[cat] || 0)}</p>
+        {/* Scrollable content */}
+        <div ref={scrollRef} style={contentStyle}>
+
+          {/* ── SUMMARY TAB ── */}
+          {tab === 'summary' && (
+            <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Overview</div>
+                  <div style={{ fontSize: 26, fontWeight: 700, color: '#1a1a1a', marginTop: 2 }}>{fmt(stats.total)}</div>
+                </div>
+                <button onClick={connectBank} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
+                  {linked ? 'Reconnect' : 'Connect'}
+                </button>
               </div>
-            ))}
-          </div>
+
+              {/* Month picker */}
+              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 24, WebkitOverflowScrolling: 'touch' }}>
+                <button onClick={() => setSelectedMonth(null)} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 20, border: `0.5px solid ${!selectedMonth ? '#1a1a1a' : '#e0e0e0'}`, background: !selectedMonth ? '#1a1a1a' : 'white', color: !selectedMonth ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>YTD</button>
+                {availableMonths.map(m => (
+                  <button key={m} onClick={() => setSelectedMonth(m)} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 20, border: `0.5px solid ${selectedMonth === m ? '#1a1a1a' : '#e0e0e0'}`, background: selectedMonth === m ? '#1a1a1a' : 'white', color: selectedMonth === m ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>{monthLabel(m)}</button>
+                ))}
+              </div>
+
+              {/* Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div style={{ background: '#f8f8f8', borderRadius: 16, padding: '16px' }}>
+                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Spending</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>{fmt(stats.total)}</div>
+                </div>
+                <div style={{ background: '#E8F4E8', borderRadius: 16, padding: '16px' }}>
+                  <div style={{ fontSize: 11, color: '#2A6030', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Income</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#2A6030' }}>{fmt(stats.income)}</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 28 }}>
+                {[
+                  { label: 'Needs', val: stats.needs, ...catColors['Needs'] },
+                  { label: 'Wants', val: stats.wants, ...catColors['Wants'] },
+                  { label: 'Impulse', val: stats.impulse, ...catColors['Impulse'] },
+                ].map(c => (
+                  <div key={c.label} style={{ background: c.bg, borderRadius: 14, padding: '12px' }}>
+                    <div style={{ fontSize: 10, color: c.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{c.label}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: c.color }}>{fmt(c.val)}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Net worth */}
+              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20 }}>
+                <div style={{ fontSize: 12, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Net Worth</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 4 }}>Assets</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: '#3A5068' }}>{fmt(positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0))}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 4 }}>Debts</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: '#683A52' }}>{fmt(negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) + manualDebt)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 4 }}>Net</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: netWorth >= 0 ? '#3A6850' : '#b04040' }}>{fmtSigned(netWorth)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── TRANSACTIONS TAB ── */}
+          {tab === 'transactions' && (
+            <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
+              <div style={{ padding: '0 20px', marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
+                  <button onClick={() => refreshAll()} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Refresh</button>
+                </div>
+              </div>
+
+              {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>Loading…</div>}
+              {!loading && txns.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#aaa' }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>🏦</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#555', marginBottom: 8 }}>No transactions yet</div>
+                  <button onClick={connectBank} style={{ fontSize: 13, padding: '10px 20px', borderRadius: 20, border: 'none', background: '#1a1a1a', color: 'white', cursor: 'pointer' }}>Connect Bank</button>
+                </div>
+              )}
+              {!loading && txnsByMonth.map(([month, mTxns]) => {
+                const total = mTxns.reduce((s, t) => s + myShare(t), 0);
+                const allLabeled = isFullyLabeled(mTxns);
+                const allCategorized = isFullyCategorized(mTxns);
+                return (
+                  <div key={month} style={{ marginBottom: 8 }}>
+                    <div style={{ padding: '8px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>{monthLabel(month)}</div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, color: '#aaa' }}>{fmt(total)}</span>
+                        {allLabeled && !labelArchivedMonths.has(month) && (
+                          <button onClick={() => archiveMonth(month, 'label')} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, border: '0.5px solid #B0C0D0', background: '#E8EEF4', color: '#3A5068', cursor: 'pointer' }}>Label ✓</button>
+                        )}
+                        {allCategorized && labelArchivedMonths.has(month) && (
+                          <button onClick={() => archiveMonth(month, 'category')} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, border: '0.5px solid #B0D0BC', background: '#E8F4EE', color: '#3A6850', cursor: 'pointer' }}>Cat ✓</button>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ padding: '0 20px' }}>
+                      {mTxns.map(t => <TxnCard key={t.id} t={t} updateField={updateField} />)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── BALANCES TAB ── */}
+          {tab === 'balances' && (
+            <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 24 }}>Balances</div>
+
+              {displayPositive.length > 0 && (
+                <>
+                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Assets</div>
+                  {displayPositive.map((a, i) => (
+                    <div key={a.account_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '0.5px solid #f0f0f0' }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{a.name}</div>
+                        <div style={{ fontSize: 11, color: '#aaa', marginTop: 2, textTransform: 'capitalize' }}>{a.subtype}</div>
+                      </div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#3A5068' }}>{fmt(a.balances.current || 0)}</div>
+                    </div>
+                  ))}
+                  <div style={{ marginBottom: 28 }} />
+                </>
+              )}
+
+              {(displayNegative.length > 0 || manualWithBalance.length > 0) && (
+                <>
+                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Debts</div>
+                  {displayNegative.map(a => (
+                    <div key={a.account_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '0.5px solid #f0f0f0' }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{a.name}</div>
+                        <div style={{ fontSize: 11, color: '#aaa', marginTop: 2, textTransform: 'capitalize' }}>{a.subtype}</div>
+                      </div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#683A52' }}>{fmt(a.balances.current || 0)}</div>
+                    </div>
+                  ))}
+                  {manualWithBalance.map(ma => (
+                    <div key={ma.id} style={{ padding: '14px 0', borderBottom: '0.5px solid #f0f0f0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{ma.name}</div>
+                          <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>manual · credit card</div>
+                        </div>
+                        <div style={{ fontSize: 16, fontWeight: 600, color: '#683A52' }}>{fmt(ma.effectiveBalance)}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                        <span style={{ fontSize: 11, color: '#aaa' }}>Base balance:</span>
+                        <input type="number" defaultValue={ma.balance} key={ma.id + '-' + ma.balance}
+                          onBlur={async e => {
+                            await fetch('/api/manual-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update_balance', id: ma.id, balance: parseFloat(e.target.value) || 0, balance_date: today }) });
+                            fetchManualAccounts();
+                          }}
+                          style={{ fontSize: 13, padding: '4px 8px', border: '0.5px solid #e0e0e0', borderRadius: 8, width: 100 }} />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── BUDGET TAB ── */}
+          {tab === 'budget' && (
+            <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 24 }}>Budget</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <BudgetAccount title="Maddie — personal" bills={maddieBills} income={maddieIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('maddie')} onAddIncome={handleAddIncome('maddie')} />
+                <BudgetAccount title="Joint account" bills={jointBills} income={jointIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('joint')} onAddIncome={handleAddIncome('joint')} />
+              </div>
+            </div>
+          )}
+
+          {/* ── ARCHIVE TAB ── */}
+          {tab === 'archive' && (
+            <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
+              <div style={{ padding: '0 20px', marginBottom: 20 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Archive</div>
+              </div>
+              {archivedTxns.length === 0 && <div style={{ textAlign: 'center', padding: '60px 20px', color: '#aaa', fontSize: 13 }}>No archived transactions yet.</div>}
+              {(() => {
+                const byMonth: Record<string, Txn[]> = {};
+                archivedTxns.forEach(t => { const m = t.date.slice(0, 7); if (!byMonth[m]) byMonth[m] = []; byMonth[m].push(t); });
+                return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0])).map(([month, mTxns]) => (
+                  <div key={month}>
+                    <div style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, color: '#555' }}>{monthLabel(month)}</div>
+                    <div style={{ padding: '0 20px' }}>
+                      {mTxns.map(t => <ArchiveCard key={t.id} t={t} />)}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
+
         </div>
 
-        <div style={{ display: 'flex', borderBottom: '0.5px solid #eee', marginBottom: '1rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
-          {['budget', 'transactions', 'spending', 'balances', 'archive'].map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 12px', fontSize: 13, fontWeight: tab === t ? 500 : 400, color: tab === t ? '#000' : '#888', borderBottom: tab === t ? '2px solid #000' : '2px solid transparent', marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+        {/* ── Bottom Tab Bar ── */}
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: '0.5px solid #efefef',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+          height: TAB_H,
+          zIndex: 100,
+        }}>
+          {TABS.map(({ id, label, Icon }) => (
+            <button key={id} onClick={() => setTab(id)} style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: tab === id ? '#1a1a1a' : '#bbb',
+              padding: '8px 12px',
+              transition: 'color 0.15s',
+            }}>
+              <Icon />
+              <span style={{ fontSize: 10, fontWeight: tab === id ? 600 : 400 }}>{label}</span>
             </button>
           ))}
         </div>
-
-        {tab === 'transactions' && <TransactionsTab txns={txns} loading={loading} manualAccountsDb={manualAccountsDb} updateField={updateField} archiveMonth={archiveMonth} addManualTxn={addManualTxn} addManualAccount={addManualAccount} />}
-        {tab === 'spending' && <SpendingTab allTxns={allTxns} labelArchivedMonths={labelArchivedMonths} updateField={updateField} archiveMonth={archiveMonth} />}
-        {tab === 'balances' && <BalancesTab accounts={accounts} manualAccountsDb={manualAccountsDb} txns={txns} archivedTxns={archivedTxns} updateManualBalance={updateManualBalance} />}
-        {tab === 'budget' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <BudgetAccount title="Maddie — personal" bills={maddieBills} income={maddieIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('maddie')} onAddIncome={handleAddIncome('maddie')} />
-            <BudgetAccount title="Joint account" bills={jointBills} income={jointIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('joint')} onAddIncome={handleAddIncome('joint')} />
-          </div>
-        )}
-        {tab === 'archive' && <ArchiveTab archivedTxns={archivedTxns} updateField={updateField} />}
 
       </div>
     </>
