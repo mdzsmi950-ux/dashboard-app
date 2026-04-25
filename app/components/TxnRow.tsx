@@ -15,7 +15,7 @@ export default function TxnRow({ t, i, updateField }: { t: Txn; i: number; updat
         </span>
       </div>
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-        {(['Maddie', 'Nick', 'Joint', 'Ignore'] as Label[]).map(l => (
+        {(['Mine', 'Joint', 'Ignore'] as Label[]).map(l => (
           <button key={l} onClick={(e) => { e.preventDefault(); updateField(t.id, 'label', l); }} style={{ fontSize: 11, padding: '3px 7px', borderRadius: 20, cursor: 'pointer', border: `0.5px solid ${t.label === l ? labelColors[l].border : '#eee'}`, background: t.label === l ? labelColors[l].bg : 'transparent', color: t.label === l ? labelColors[l].color : '#ccc', fontWeight: t.label === l ? 500 : 400 }}>{l}</button>
         ))}
       </div>

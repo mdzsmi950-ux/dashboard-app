@@ -17,7 +17,7 @@ export default function SpendingRow({ t, i, updateField }: { t: Txn; i: number; 
       </div>
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
-          const disabled = t.label === 'Nick' || t.label === 'Ignore' || !t.label;
+          const disabled = t.label === 'Ignore' || !t.label;
           return <button key={cat} onClick={(e) => { e.preventDefault(); if (!disabled) updateField(t.id, 'category', cat); }} style={{ fontSize: 11, padding: '3px 7px', borderRadius: 20, cursor: disabled ? 'default' : 'pointer', border: `0.5px solid ${!disabled && t.category === cat ? catColors[cat].border : '#eee'}`, background: !disabled && t.category === cat ? catColors[cat].bg : 'transparent', color: !disabled && t.category === cat ? catColors[cat].color : '#ddd', fontWeight: !disabled && t.category === cat ? 500 : 400 }}>{cat}</button>;
         })}
       </div>
