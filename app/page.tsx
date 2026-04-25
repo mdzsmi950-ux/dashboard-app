@@ -131,7 +131,7 @@ export default function App() {
     try {
       const t = localStorage.getItem('cache_txns'); if (t) setTxns(JSON.parse(t));
       const a = localStorage.getItem('cache_archived'); if (a) setArchivedTxns(JSON.parse(a));
-      const acc = localStorage.getItem('cache_accounts'); if (acc) setAccounts(JSON.parse(acc));
+      // accounts not cached - always fetch fresh
       const b = localStorage.getItem('cache_bills'); if (b) setBills(JSON.parse(b));
       const inc = localStorage.getItem('cache_income'); if (inc) setIncome(JSON.parse(inc));
     } catch {}
