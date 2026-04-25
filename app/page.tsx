@@ -50,23 +50,6 @@ const pill = (active: boolean, colors: { bg: string; border: string; color: stri
   fontWeight: active ? 500 : 400,
 } as const);
 
-function usePullToRefresh(onRefresh: () => Promise<void>) {
-  const [pulling, setPulling] = useState(false);
-  const startY = useRef(0);
-  const el = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const node = el.current;
-    if (!node) return;
-    const onTouchStart = (e: TouchEvent) => { startY.current = e.touches[0].clientY; };
-    const onTouchEnd = async (e: TouchEvent) => {
-      const dy = e.changedTouches[0].clientY - startY.current;
-      if (dy > 80 && node.scrollTop === 0) { setPulling(true); await onRefresh(); setPulling(false); }
-    };
-    node.addEventListener('touchstart', onTouchStart, { passive: true });
-    node.addEventListener('touchend', onTouchEnd, { passive: true });
-    return () => { node.removeEventListener('touchstart', onTouchStart); node.removeEventListener('touchend', onTouchEnd); };
-  }, [onRefresh]);
-  return { el, pulling };
 }
 
 function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: string, v: any) => void }) {
@@ -166,7 +149,7 @@ export default function App() {
 
   useEffect(() => { fetchBudget(); fetchArchived(); fetchAccounts(); fetchManualAccounts(); }, [fetchBudget, fetchArchived]);
 
-  const { el: scrollRef, pulling } = usePullToRefresh(refreshAll);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const connectBank = async () => {
     const { link_token } = await fetch('/api/create-link-token', { method: 'POST' }).then(r => r.json());
@@ -305,7 +288,7 @@ export default function App() {
       <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async />
       <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#fff', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', overflowX: 'hidden' }}>
 
-        {pulling && <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: '#aaa' }}>Refreshing…</div>}
+
 
         <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
 
