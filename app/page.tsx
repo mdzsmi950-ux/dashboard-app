@@ -221,6 +221,7 @@ export default function App() {
   const accountOptions = useMemo(() => Array.from(new Set(txns.map(t => t.account).filter(Boolean))).sort() as string[], [txns]);
 
   const filteredTxns = useMemo(() => txns.filter(t => {
+    if (t.label_archived) return false;
     const matchAccount = filterAccount === 'All' || t.account === filterAccount;
     const matchMonth = filterMonth === 'All' || t.date.startsWith(filterMonth);
     return matchAccount && matchMonth;
