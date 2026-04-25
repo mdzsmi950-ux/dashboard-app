@@ -158,8 +158,8 @@ export default function App() {
   const refreshAll = useCallback(async () => {
     await Promise.all([fetchTxns(), fetchAccounts(), fetchArchived(), fetchManualAccounts()]);
   }, [fetchArchived]);
-
-  useEffect(() => { fetchBudget(); fetchArchived(); fetchAccounts(); fetchManualAccounts(); fetchTxns(); }, [fetchBudget, fetchArchived]);
+useEffect(() => { fetchBudget(); fetchArchived(); fetchManualAccounts(); fetchTxns(); }, [fetchBudget, fetchArchived]);
+  
 
   const connectBank = async () => {
     const { link_token } = await fetch('/api/create-link-token', { method: 'POST' }).then(r => r.json());
