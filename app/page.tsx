@@ -139,9 +139,15 @@ export default function App() {
 
   const fetchTxns = async () => {
     setLoading(true);
+    try { const d = await fetch("/api/transactions/saved").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setTxns(safe); localStorage.setItem("cache_txns", JSON.stringify(safe)); } catch {}
+    setLoading(false);
+  };
+  const fetchTxnsFromPlaid = async () => {
+    setLoading(true);
     try { const d = await fetch("/api/transactions").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setTxns(safe); localStorage.setItem("cache_txns", JSON.stringify(safe)); } catch {}
     setLoading(false);
   };
+
   const fetchAccounts = async () => {
     try { const d = await fetch("/api/balances").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setAccounts(safe); localStorage.setItem("cache_accounts", JSON.stringify(safe)); } catch {}
   };
@@ -156,10 +162,10 @@ export default function App() {
   }, []);
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([fetchTxns(), fetchAccounts(), fetchArchived(), fetchManualAccounts()]);
+    await Promise.all([fetchTxnsFromPlaid(), fetchAccounts(), fetchArchived(), fetchManualAccounts()]);
   }, [fetchArchived]);
-useEffect(() => { fetchBudget(); fetchArchived(); fetchManualAccounts(); fetchTxns(); }, [fetchBudget, fetchArchived]);
-  
+
+  useEffect(() => { fetchBudget(); fetchArchived(); fetchAccounts(); fetchManualAccounts(); fetchTxns(); }, [fetchBudget, fetchArchived]);
 
   const connectBank = async () => {
     const { link_token } = await fetch('/api/create-link-token', { method: 'POST' }).then(r => r.json());
