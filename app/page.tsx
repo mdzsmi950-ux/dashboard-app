@@ -458,8 +458,8 @@ export default function App() {
                 {selectedMonth && (
                   <div>
                     {[
-                      { label: 'Spending', value: monthlyStats.total, color: '#1a1a1a' },
                       { label: 'Income', value: monthlyStats.income, color: '#2A6030' },
+{ label: 'Spending', value: monthlyStats.total, color: '#1a1a1a' },
                       { label: 'Needs', value: monthlyStats.needs, color: catColors['Needs'].color },
                       { label: 'Wants', value: monthlyStats.wants, color: catColors['Wants'].color },
                       { label: 'Impulse', value: monthlyStats.impulse, color: catColors['Impulse'].color },
