@@ -139,20 +139,20 @@ export default function App() {
 
   const fetchTxns = async () => {
     setLoading(true);
-    try { const d = await fetch('/api/transactions').then(r => r.json()); setTxns(d); localStorage.setItem('cache_txns', JSON.stringify(d)); } catch {}
+    try { const d = await fetch("/api/transactions").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setTxns(safe); localStorage.setItem("cache_txns", JSON.stringify(safe)); } catch {}
     setLoading(false);
   };
   const fetchAccounts = async () => {
-    try { const d = await fetch('/api/balances').then(r => r.json()); setAccounts(d); localStorage.setItem('cache_accounts', JSON.stringify(d)); } catch {}
+    try { const d = await fetch("/api/balances").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setAccounts(safe); localStorage.setItem("cache_accounts", JSON.stringify(safe)); } catch {}
   };
   const fetchManualAccounts = async () => {
-    try { const d = await fetch('/api/manual-accounts').then(r => r.json()); setManualAccountsDb(d); } catch {}
+    try { const d = await fetch("/api/manual-accounts").then(r => r.json()); setManualAccountsDb(Array.isArray(d) ? d : []); } catch {}
   };
   const fetchBudget = useCallback(async () => {
-    try { const data = await fetch('/api/budget').then(r => r.json()); setBills(data.bills || []); setIncome(data.income || []); } catch {}
+    try { const d = await fetch("/api/budget").then(r => r.json()); setBills(Array.isArray(d?.bills) ? d.bills : []); setIncome(Array.isArray(d?.income) ? d.income : []); } catch {}
   }, []);
   const fetchArchived = useCallback(async () => {
-    try { const d = await fetch('/api/transactions/archived').then(r => r.json()); setArchivedTxns(d); localStorage.setItem('cache_archived', JSON.stringify(d)); } catch {}
+    try { const d = await fetch("/api/transactions/archived").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setArchivedTxns(safe); localStorage.setItem("cache_archived", JSON.stringify(safe)); } catch {}
   }, []);
 
   const refreshAll = useCallback(async () => {
