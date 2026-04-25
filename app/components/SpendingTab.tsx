@@ -14,18 +14,18 @@ const monthCatTotals = (mTxns: Txn[]) => {
   const map: Record<string, number> = {};
   mTxns.forEach(t => {
     if (!t.category) return;
-    const share = !t.label || t.label === 'Ignore' || t.category === 'Income' ? 0 : t.label === 'Joint' ? t.amount / 2 : t.label === 'Maddie' ? t.amount : 0;
+    const share = !t.label || t.label === 'Ignore' || t.category === 'Income' ? 0 : t.label === 'Joint' ? t.amount / 2 : t.label === 'Mine' ? t.amount : 0;
     map[t.category] = (map[t.category] || 0) + share;
   });
   return map;
 };
 
-const isFullyCategorized = (mTxns: Txn[]) => mTxns.every(t => t.category !== null || t.label === 'Ignore' || t.label === 'Nick');
+const isFullyCategorized = (mTxns: Txn[]) => mTxns.every(t => t.category !== null || t.label === 'Ignore');
 
 export default function SpendingTab({ allTxns, labelArchivedMonths, updateField, archiveMonth }: Props) {
   const spendingByMonth: [string, Txn[]][] = (() => {
     const map: Record<string, Txn[]> = {};
-    allTxns.filter(t => (t.label === 'Mine' || t.label === 'Joint') && !t.category_archived)
+    allTxns.filter(t => (t.label === 'Mine' || t.label === 'Joint') && !t.label_archived)
       .forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
   })();
