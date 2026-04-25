@@ -4,7 +4,7 @@ import { fmt, myShare } from './constants';
 
 type Props = {
   allTxns: Txn[];
-  updateField: (id: string, field: keyof Txn, val: any) => void;
+  updateField: (id: string, field: string, val: any) => void;
 };
 
 const isReviewedSpendingTxn = (t: Txn) => {
