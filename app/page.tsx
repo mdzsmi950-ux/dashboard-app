@@ -130,7 +130,7 @@ export default function App() {
   const [budgetSubtab, setBudgetSubtab] = useState<'maddie' | 'joint'>('maddie');
   const [archiveSearch, setArchiveSearch] = useState('');
   const [filterAccount, setFilterAccount] = useState('All');
-  const [filterLabel, setFilterLabel] = useState('All');
+  const [filterMonth, setFilterMonth] = useState('All');
 
   useEffect(() => {
     try {
@@ -234,9 +234,9 @@ export default function App() {
 
   const filteredTxns = useMemo(() => txns.filter(t => {
     const matchAccount = filterAccount === 'All' || t.account === filterAccount;
-    const matchLabel = filterLabel === 'All' || t.label === filterLabel || (filterLabel === 'Unlabeled' && !t.label);
-    return matchAccount && matchLabel;
-  }), [txns, filterAccount, filterLabel]);
+    const matchMonth = filterMonth === 'All' || t.date.startsWith(filterMonth);
+    return matchAccount && matchMonth;
+  }), [txns, filterAccount, filterMonth]);
 
   const txnsByMonth = useMemo(() => {
     const map: Record<string, Txn[]> = {};
@@ -312,13 +312,13 @@ export default function App() {
                   <button onClick={() => refreshAll()} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Refresh</button>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8' }}>
+                  <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', minWidth: 0 }}>
                     <option value="All">All accounts</option>
                     {accountOptions.map(a => <option key={a} value={a}>{a}</option>)}
                   </select>
-                  <select value={filterLabel} onChange={e => setFilterLabel(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8' }}>
-                    <option value="All">All labels</option>
-                    <option>Maddie</option><option>Nick</option><option>Joint</option><option>Ignore</option><option value="Unlabeled">Unlabeled</option>
+                  <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', minWidth: 0 }}>
+                    <option value="All">All months</option>
+                    {Array.from(new Set(txns.map(t => t.date.slice(0, 7)))).sort((a, b) => b.localeCompare(a)).map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
                 </div>
               </div>
