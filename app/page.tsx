@@ -1,4 +1,4 @@
-'use client';
+\'use client';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Txn, Account, Bill, BudgetIncome, ManualAccount, Category, Label } from './components/types';
 import { fmt, fmtSigned, today, myShare, incomeShare, catColors, labelColors, monthLabel } from './components/constants';
@@ -139,6 +139,8 @@ export default function App() {
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [budgetSubtab, setBudgetSubtab] = useState<'maddie' | 'joint'>('maddie');
   const [archiveSearch, setArchiveSearch] = useState('');
+  const [filterAccount, setFilterAccount] = useState('All');
+  const [filterLabel, setFilterLabel] = useState('All');
 
   useEffect(() => {
     try {
@@ -259,10 +261,19 @@ export default function App() {
   const netWorth = positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0)
     - negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) - manualDebt;
 
+  const accountOptions = useMemo(() => Array.from(new Set(txns.map(t => t.account).filter(Boolean))).sort() as string[], [txns]);
+
+  const filteredTxns = useMemo(() => txns.filter(t => {
+    const matchAccount = filterAccount === 'All' || t.account === filterAccount;
+    const matchLabel = filterLabel === 'All' || t.label === filterLabel || (filterLabel === 'Unlabeled' && !t.label);
+    return matchAccount && matchLabel;
+  }), [txns, filterAccount, filterLabel]);
+
   const txnsByMonth = useMemo(() => {
     const map: Record<string, Txn[]> = {};
-    txns.forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
+    filteredTxns.forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [filteredTxns]);
   }, [txns]);
 
   const isFullyLabeled = (mTxns: Txn[]) => mTxns.every(t => t.label !== null);
@@ -370,9 +381,21 @@ export default function App() {
           {/* ── TRANSACTIONS TAB ── */}
           {tab === 'transactions' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
-              <div style={{ padding: '0 20px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
-                <button onClick={() => refreshAll()} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Refresh</button>
+              <div style={{ padding: '0 20px', marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
+                  <button onClick={() => refreshAll()} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Refresh</button>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8' }}>
+                    <option value="All">All accounts</option>
+                    {accountOptions.map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                  <select value={filterLabel} onChange={e => setFilterLabel(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8' }}>
+                    <option value="All">All labels</option>
+                    <option>Maddie</option><option>Nick</option><option>Joint</option><option>Ignore</option><option value="Unlabeled">Unlabeled</option>
+                  </select>
+                </div>
               </div>
               {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>Loading…</div>}
               {!loading && txns.length === 0 && (
