@@ -301,7 +301,7 @@ export default function App() {
 
         {pulling && <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: '#aaa' }}>Refreshing…</div>}
 
-        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
 
           {/* TRANSACTIONS TAB */}
           {tab === 'transactions' && (
