@@ -25,12 +25,12 @@ const isFullyCategorized = (mTxns: Txn[]) => mTxns.every(t => t.category !== nul
 export default function SpendingTab({ allTxns, labelArchivedMonths, updateField, archiveMonth }: Props) {
   const spendingByMonth: [string, Txn[]][] = (() => {
     const map: Record<string, Txn[]> = {};
-    allTxns.filter(t => (t.label === 'Maddie' || t.label === 'Joint') && !t.category_archived)
+    allTxns.filter(t => (t.label === 'Mine' || t.label === 'Joint') && !t.category_archived)
       .forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
   })();
 
-  if (allTxns.filter(t => t.label === 'Maddie' || t.label === 'Joint').length === 0) {
+  if (allTxns.filter(t => t.label === 'Mine' || t.label === 'Joint').length === 0) {
     return <div style={{ textAlign: 'center', padding: '3rem 0', color: '#888' }}><p style={{ fontSize: 13 }}>No labeled transactions yet.</p></div>;
   }
 
