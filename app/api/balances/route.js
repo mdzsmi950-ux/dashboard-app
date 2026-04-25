@@ -7,17 +7,16 @@ export async function GET() {
     .from('access_tokens')
     .select('token');
 
+  const seen = new Set();
   const allAccounts = [];
   for (const row of tokenRows) {
     try {
-      const res = await plaidClient.accountsBalanceGet({
-        access_token: row.token,
-      });
-      const accounts = res.data.accounts.map(a => ({
-        ...a,
-        name: a.mask ? `${a.name} ···${a.mask}` : a.name,
-      }));
-      allAccounts.push(...accounts);
+      const res = await plaidClient.accountsBalanceGet({ access_token: row.token });
+      for (const a of res.data.accounts) {
+        if (seen.has(a.account_id)) continue;
+        seen.add(a.account_id);
+        allAccounts.push({ ...a, name: a.mask ? `${a.name} ···${a.mask}` : a.name });
+      }
     } catch (e) {
       console.error('Bad token, skipping:', row.token, e);
     }
