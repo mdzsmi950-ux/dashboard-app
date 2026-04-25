@@ -59,9 +59,9 @@ export default function SpendingTab({ allTxns, updateField }: Props) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {mTxns.map(t => (
-                <SpendingRow key={t.id} t={t} updateField={updateField} />
-              ))}
+             {mTxns.map((t, i) => (
+  <SpendingRow key={t.id} t={t} i={i} updateField={updateField} />
+))}
             </div>
           </div>
         );
