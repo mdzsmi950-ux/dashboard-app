@@ -50,7 +50,6 @@ const pill = (active: boolean, colors: { bg: string; border: string; color: stri
   fontWeight: active ? 500 : 400,
 } as const);
 
-
 function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: string, v: any) => void }) {
   return (
     <div style={{ padding: '14px 0', borderBottom: '0.5px solid #f0f0f0' }}>
@@ -64,13 +63,13 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
         </div>
       </div>
       <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-        {(['Maddie', 'Nick', 'Joint', 'Ignore'] as Label[]).map(l => (
+        {(['Mine', 'Joint', 'Ignore'] as Label[]).map(l => (
           <button key={l} onClick={(e) => { e.preventDefault(); updateField(t.id, 'label', l); }} style={pill(t.label === l, labelColors[l])}>{l}</button>
         ))}
       </div>
       <div style={{ display: 'flex', gap: 4 }}>
         {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
-          const disabled = t.label === 'Nick' || t.label === 'Ignore' || !t.label;
+          const disabled = t.label === 'Ignore' || !t.label;
           return <button key={cat} onClick={(e) => { e.preventDefault(); if (!disabled) updateField(t.id, 'category', cat); }} style={pill(!disabled && t.category === cat, catColors[cat])}>{cat}</button>;
         })}
       </div>
@@ -148,8 +147,6 @@ export default function App() {
 
   useEffect(() => { fetchBudget(); fetchArchived(); fetchAccounts(); fetchManualAccounts(); }, [fetchBudget, fetchArchived]);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   const connectBank = async () => {
     const { link_token } = await fetch('/api/create-link-token', { method: 'POST' }).then(r => r.json());
     const handler = (window as any).Plaid.create({
@@ -163,22 +160,28 @@ export default function App() {
   };
 
   const updateField = async (id: string, field: string, val: any) => {
-    const clearCategory = field === 'label' && (val === 'Ignore' || val === 'Nick');
-    const autoArchive = field === 'label' && (val === 'Ignore' || val === 'Nick');
-    setTxns(prev => prev.map(t => t.id === id ? { ...t, [field]: val, ...(clearCategory ? { category: null } : {}), ...(autoArchive ? { label_archived: true } : {}) } : t));
-    setArchivedTxns(prev => prev.map(t => t.id === id ? { ...t, [field]: val, ...(clearCategory ? { category: null } : {}) } : t));
+    const autoArchive = field === 'label' && val === 'Ignore';
+    const clearCategory = field === 'label' && val === 'Ignore';
+
+    if (autoArchive) {
+      const txn = txns.find(t => t.id === id);
+      if (txn) {
+        setTxns(prev => prev.filter(t => t.id !== id));
+        setArchivedTxns(prev => [{ ...txn, label: 'Ignore' as Label, label_archived: true, category: null }, ...prev]);
+      }
+    } else {
+      setTxns(prev => prev.map(t => t.id === id ? { ...t, [field]: val } : t));
+      setArchivedTxns(prev => prev.map(t => t.id === id ? { ...t, [field]: val } : t));
+    }
+
     await fetch('/api/transactions/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, field, val }) });
     if (clearCategory) await fetch('/api/transactions/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, field: 'category', val: null }) });
     if (autoArchive) await fetch('/api/transactions/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, field: 'label_archived', val: true }) });
   };
 
-  const archiveMonth = async (month: string, type: 'label' | 'category') => {
-    await fetch('/api/transactions/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ month, type }) });
-    if (type === 'label') {
-      setTxns(prev => prev.map(t => t.date.startsWith(month) ? { ...t, label_archived: true } : t));
-    } else {
-      setTxns(prev => prev.map(t => t.date.startsWith(month) ? { ...t, category_archived: true } : t));
-    }
+  const archiveMonth = async (month: string) => {
+    await fetch('/api/transactions/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ month, type: 'label' }) });
+    setTxns(prev => prev.map(t => t.date.startsWith(month) ? { ...t, label_archived: true } : t));
   };
 
   const budgetApi = async (action: string, table: string, data: any) => {
@@ -235,7 +238,6 @@ export default function App() {
 
   const isFullyLabeled = (mTxns: Txn[]) => mTxns.every(t => t.label !== null);
   const labelArchivedMonths = useMemo(() => { const s = new Set<string>(); archivedTxns.forEach(t => s.add(t.date.slice(0, 7))); return s; }, [archivedTxns]);
-  const isFullyCategorized = (mTxns: Txn[]) => mTxns.every(t => t.category !== null || t.label === 'Ignore' || t.label === 'Nick');
 
   const SPENDABLE = new Set(['savings', 'checking']);
   const EXCL_MASKS = new Set(['7070']);
@@ -287,10 +289,7 @@ export default function App() {
     <>
       <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async />
       <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#fff', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', overflowX: 'hidden' }}>
-
-
-
-        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
 
           {/* TRANSACTIONS TAB */}
           {tab === 'transactions' && (
@@ -322,7 +321,6 @@ export default function App() {
               {!loading && txnsByMonth.map(([month, mTxns]) => {
                 const total = mTxns.reduce((s, t) => s + myShare(t), 0);
                 const allLabeled = isFullyLabeled(mTxns);
-                const allCategorized = isFullyCategorized(mTxns);
                 return (
                   <div key={month} style={{ marginBottom: 8 }}>
                     <div style={{ padding: '8px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -330,10 +328,7 @@ export default function App() {
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <span style={{ fontSize: 12, color: '#aaa' }}>{fmt(total)}</span>
                         {allLabeled && !labelArchivedMonths.has(month) && (
-                          <button onClick={() => archiveMonth(month, 'label')} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, border: '0.5px solid #B0C0D0', background: '#E8EEF4', color: '#3A5068', cursor: 'pointer' }}>Label ✓</button>
-                        )}
-                        {allCategorized && labelArchivedMonths.has(month) && (
-                          <button onClick={() => archiveMonth(month, 'category')} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, border: '0.5px solid #B0D0BC', background: '#E8F4EE', color: '#3A6850', cursor: 'pointer' }}>Cat ✓</button>
+                          <button onClick={() => archiveMonth(month)} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, border: '0.5px solid #B0C0D0', background: '#E8EEF4', color: '#3A5068', cursor: 'pointer' }}>Confirm ✓</button>
                         )}
                       </div>
                     </div>
@@ -407,7 +402,7 @@ export default function App() {
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ padding: '0 20px', marginBottom: 16 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>Budget</div>
-                <div style={{ display: 'flex', gap: 0, background: '#f5f5f5', borderRadius: 10, padding: 3 }}>
+                <div style={{ display: 'flex', background: '#f5f5f5', borderRadius: 10, padding: 3 }}>
                   {(['maddie', 'joint'] as const).map(sub => (
                     <button key={sub} onClick={() => setBudgetSubtab(sub)} style={{
                       flex: 1, padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -421,12 +416,8 @@ export default function App() {
                 </div>
               </div>
               <div style={{ padding: '0 20px' }}>
-                {budgetSubtab === 'maddie' && (
-                  <BudgetAccount title="Maddie — personal" bills={maddieBills} income={maddieIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('maddie')} onAddIncome={handleAddIncome('maddie')} />
-                )}
-                {budgetSubtab === 'joint' && (
-                  <BudgetAccount title="Joint account" bills={jointBills} income={jointIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('joint')} onAddIncome={handleAddIncome('joint')} />
-                )}
+                {budgetSubtab === 'maddie' && <BudgetAccount title="Maddie — personal" bills={maddieBills} income={maddieIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('maddie')} onAddIncome={handleAddIncome('maddie')} />}
+                {budgetSubtab === 'joint' && <BudgetAccount title="Joint account" bills={jointBills} income={jointIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('joint')} onAddIncome={handleAddIncome('joint')} />}
               </div>
             </div>
           )}
@@ -436,11 +427,8 @@ export default function App() {
             <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Summary</div>
-                <button onClick={connectBank} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
-                  {linked ? 'Reconnect' : 'Connect'}
-                </button>
+                <button onClick={connectBank} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>{linked ? 'Reconnect' : 'Connect'}</button>
               </div>
-
               <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Year to Date</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                 <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Spending</div><div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>{fmt(ytdStats.total)}</div></div>
@@ -451,7 +439,6 @@ export default function App() {
                 <div><div style={{ fontSize: 10, color: catColors['Wants'].color, marginBottom: 4 }}>Wants</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Wants'].color }}>{fmt(ytdStats.wants)}</div></div>
                 <div><div style={{ fontSize: 10, color: catColors['Impulse'].color, marginBottom: 4 }}>Impulse</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Impulse'].color }}>{fmt(ytdStats.impulse)}</div></div>
               </div>
-
               <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20, marginBottom: 28 }}>
                 <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Net Worth</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
@@ -460,12 +447,10 @@ export default function App() {
                   <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Net</div><div style={{ fontSize: 18, fontWeight: 700, color: netWorth >= 0 ? '#3A6850' : '#b04040' }}>{fmtSigned(netWorth)}</div></div>
                 </div>
               </div>
-
               <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly Breakdown</div>
-                  <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
-                    style={{ fontSize: 13, padding: '6px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: 'white', color: '#1a1a1a', cursor: 'pointer' }}>
+                  <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ fontSize: 13, padding: '6px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: 'white', color: '#1a1a1a' }}>
                     <option value="">Select month</option>
                     {availableMonths.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
@@ -495,12 +480,8 @@ export default function App() {
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ padding: '0 20px', marginBottom: 16 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>Archive</div>
-                <input
-                  placeholder="Search transactions..."
-                  value={archiveSearch}
-                  onChange={e => setArchiveSearch(e.target.value)}
-                  style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #e0e0e0', borderRadius: 10, background: '#f8f8f8', boxSizing: 'border-box' as const }}
-                />
+                <input placeholder="Search transactions..." value={archiveSearch} onChange={e => setArchiveSearch(e.target.value)}
+                  style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #e0e0e0', borderRadius: 10, background: '#f8f8f8', boxSizing: 'border-box' as const }} />
               </div>
               {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>No results.</div>}
               {(() => {
@@ -543,7 +524,6 @@ export default function App() {
             </button>
           ))}
         </div>
-
       </div>
     </>
   );

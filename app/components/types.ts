@@ -1,4 +1,4 @@
-export type Label = 'Maddie' | 'Nick' | 'Joint' | 'Ignore';
+export type Label = 'Mine' | 'Joint' | 'Ignore';
 export type Category = 'Needs' | 'Wants' | 'Impulse' | 'Income';
 
 export type Txn = {
@@ -10,9 +10,7 @@ export type Txn = {
   label: Label | null;
   category: Category | null;
   notes: string;
-  archived: boolean;
   label_archived: boolean;
-  category_archived: boolean;
 };
 
 export type Account = {

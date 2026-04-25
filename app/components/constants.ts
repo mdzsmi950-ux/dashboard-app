@@ -1,8 +1,7 @@
-import type { Label, Category } from './types';
+import type { Label, Category, Txn } from './types';
 
 export const labelColors: Record<Label, { bg: string; border: string; color: string }> = {
-  Maddie: { bg: '#E8EEF4', border: '#B0C0D0', color: '#3A5068' },
-  Nick:   { bg: '#EEE8F4', border: '#C0B0D0', color: '#523A68' },
+  Mine:   { bg: '#E8EEF4', border: '#B0C0D0', color: '#3A5068' },
   Joint:  { bg: '#E8F4EE', border: '#B0D0BC', color: '#3A6850' },
   Ignore: { bg: '#F5F5F5', border: '#DDD',    color: '#AAA'    },
 };
@@ -20,14 +19,14 @@ export const today = new Date().toISOString().split('T')[0];
 export const labelDate = (d: string) => { if (!d) return ''; const [y, m, day] = d.split('-'); return `${parseInt(m)}/${parseInt(day)}${parseInt(y) >= 2027 ? `/${y}` : ''}`; };
 export const monthLabel = (m: string) => { const [y, mo] = m.split('-'); return new Date(parseInt(y), parseInt(mo) - 1).toLocaleString('default', { month: 'long', year: 'numeric' }); };
 
-export const myShare = (t: import('./types').Txn) => {
+export const myShare = (t: Txn) => {
   if (!t.label || t.label === 'Ignore' || t.category === 'Income') return 0;
-  return t.label === 'Joint' ? t.amount / 2 : t.label === 'Maddie' ? t.amount : 0;
+  return t.label === 'Joint' ? t.amount / 2 : t.label === 'Mine' ? t.amount : 0;
 };
 
-export const incomeShare = (t: import('./types').Txn) => {
+export const incomeShare = (t: Txn) => {
   if (t.category !== 'Income' || !t.label || t.label === 'Ignore') return 0;
-  return t.label === 'Joint' ? Math.abs(t.amount) / 2 : t.label === 'Maddie' ? Math.abs(t.amount) : 0;
+  return t.label === 'Joint' ? Math.abs(t.amount) / 2 : t.label === 'Mine' ? Math.abs(t.amount) : 0;
 };
 
 export const inp = { padding: '6px 10px', borderRadius: 8, border: '0.5px solid #ddd', background: 'white', color: '#000', fontSize: 13, width: '100%', boxSizing: 'border-box' as const };
