@@ -4,7 +4,6 @@ import type { Txn, Account, Bill, BudgetIncome, ManualAccount, Category, Label }
 import { fmt, fmtSigned, today, myShare, incomeShare, catColors, labelColors, monthLabel } from './components/constants';
 import BudgetAccount from './components/BudgetAccount';
 
-// ── Icons ──────────────────────────────────────────────────────────────────
 const IconSummary = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
     <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -68,15 +67,6 @@ function usePullToRefresh(onRefresh: () => Promise<void>) {
     return () => { node.removeEventListener('touchstart', onTouchStart); node.removeEventListener('touchend', onTouchEnd); };
   }, [onRefresh]);
   return { el, pulling };
-}
-
-function StatCard({ label, value, bg, color, border }: { label: string; value: number; bg: string; color: string; border?: string }) {
-  return (
-    <div style={{ background: bg, borderRadius: 16, padding: '14px 16px', border: border ? `0.5px solid ${border}` : 'none' }}>
-      <div style={{ fontSize: 10, color, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6, opacity: 0.8 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 700, color }}>{fmt(value)}</div>
-    </div>
-  );
 }
 
 function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: string, v: any) => void }) {
@@ -219,7 +209,6 @@ export default function App() {
     return Array.from(months).sort((a, b) => b.localeCompare(a));
   }, [allTxns]);
 
-  // YTD stats (always full year)
   const ytdStats = useMemo(() => ({
     total: allTxns.reduce((s, t) => s + myShare(t), 0),
     income: allTxns.reduce((s, t) => s + incomeShare(t), 0),
@@ -228,7 +217,6 @@ export default function App() {
     impulse: allTxns.filter(t => t.category === 'Impulse').reduce((s, t) => s + myShare(t), 0),
   }), [allTxns]);
 
-  // Monthly stats (filtered by selected month)
   const monthlyTxns = useMemo(() => {
     if (!selectedMonth) return [];
     return allTxns.filter(t => t.date.startsWith(selectedMonth));
@@ -241,6 +229,24 @@ export default function App() {
     wants: monthlyTxns.filter(t => t.category === 'Wants').reduce((s, t) => s + myShare(t), 0),
     impulse: monthlyTxns.filter(t => t.category === 'Impulse').reduce((s, t) => s + myShare(t), 0),
   }), [monthlyTxns]);
+
+  const accountOptions = useMemo(() => Array.from(new Set(txns.map(t => t.account).filter(Boolean))).sort() as string[], [txns]);
+
+  const filteredTxns = useMemo(() => txns.filter(t => {
+    const matchAccount = filterAccount === 'All' || t.account === filterAccount;
+    const matchLabel = filterLabel === 'All' || t.label === filterLabel || (filterLabel === 'Unlabeled' && !t.label);
+    return matchAccount && matchLabel;
+  }), [txns, filterAccount, filterLabel]);
+
+  const txnsByMonth = useMemo(() => {
+    const map: Record<string, Txn[]> = {};
+    filteredTxns.forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
+    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [filteredTxns]);
+
+  const isFullyLabeled = (mTxns: Txn[]) => mTxns.every(t => t.label !== null);
+  const labelArchivedMonths = useMemo(() => { const s = new Set<string>(); archivedTxns.forEach(t => s.add(t.date.slice(0, 7))); return s; }, [archivedTxns]);
+  const isFullyCategorized = (mTxns: Txn[]) => mTxns.every(t => t.category !== null || t.label === 'Ignore' || t.label === 'Nick');
 
   const SPENDABLE = new Set(['savings', 'checking']);
   const EXCL_MASKS = new Set(['7070']);
@@ -260,25 +266,6 @@ export default function App() {
   const manualDebt = manualWithBalance.reduce((s, a) => s + a.effectiveBalance, 0);
   const netWorth = positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0)
     - negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) - manualDebt;
-
-  const accountOptions = useMemo(() => Array.from(new Set(txns.map(t => t.account).filter(Boolean))).sort() as string[], [txns]);
-
-  const filteredTxns = useMemo(() => txns.filter(t => {
-    const matchAccount = filterAccount === 'All' || t.account === filterAccount;
-    const matchLabel = filterLabel === 'All' || t.label === filterLabel || (filterLabel === 'Unlabeled' && !t.label);
-    return matchAccount && matchLabel;
-  }), [txns, filterAccount, filterLabel]);
-
-  const txnsByMonth = useMemo(() => {
-    const map: Record<string, Txn[]> = {};
-    filteredTxns.forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
-    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filteredTxns]);
-  }, [txns]);
-
-  const isFullyLabeled = (mTxns: Txn[]) => mTxns.every(t => t.label !== null);
-  const labelArchivedMonths = useMemo(() => { const s = new Set<string>(); archivedTxns.forEach(t => s.add(t.date.slice(0, 7))); return s; }, [archivedTxns]);
-  const isFullyCategorized = (mTxns: Txn[]) => mTxns.every(t => t.category !== null || t.label === 'Ignore' || t.label === 'Nick');
 
   const maddieBills = bills.filter(b => b.account === 'maddie');
   const maddieIncome = income.filter(p => p.account === 'maddie');
@@ -316,69 +303,7 @@ export default function App() {
 
         <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
 
-          {/* ── SUMMARY TAB ── */}
-          {tab === 'summary' && (
-            <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Summary</div>
-                <button onClick={connectBank} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
-                  {linked ? 'Reconnect' : 'Connect'}
-                </button>
-              </div>
-
-              {/* YTD — grid style like net worth */}
-              <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Year to Date</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Spending</div><div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a' }}>{fmt(ytdStats.total)}</div></div>
-                <div><div style={{ fontSize: 10, color: '#2A6030', marginBottom: 4 }}>Income</div><div style={{ fontSize: 18, fontWeight: 700, color: '#2A6030' }}>{fmt(ytdStats.income)}</div></div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 28 }}>
-                <div><div style={{ fontSize: 10, color: catColors['Needs'].color, marginBottom: 4 }}>Needs</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Needs'].color }}>{fmt(ytdStats.needs)}</div></div>
-                <div><div style={{ fontSize: 10, color: catColors['Wants'].color, marginBottom: 4 }}>Wants</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Wants'].color }}>{fmt(ytdStats.wants)}</div></div>
-                <div><div style={{ fontSize: 10, color: catColors['Impulse'].color, marginBottom: 4 }}>Impulse</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Impulse'].color }}>{fmt(ytdStats.impulse)}</div></div>
-              </div>
-
-              {/* Net worth */}
-              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20, marginBottom: 28 }}>
-                <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Net Worth</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Assets</div><div style={{ fontSize: 18, fontWeight: 700, color: '#3A5068' }}>{fmt(positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0))}</div></div>
-                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Debts</div><div style={{ fontSize: 18, fontWeight: 700, color: '#683A52' }}>{fmt(negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) + manualDebt)}</div></div>
-                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Net</div><div style={{ fontSize: 18, fontWeight: 700, color: netWorth >= 0 ? '#3A6850' : '#b04040' }}>{fmtSigned(netWorth)}</div></div>
-                </div>
-              </div>
-
-              {/* Month breakdown */}
-              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly Breakdown</div>
-                  <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
-                    style={{ fontSize: 13, padding: '6px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: 'white', color: '#1a1a1a', cursor: 'pointer' }}>
-                    <option value="">Select month</option>
-                    {availableMonths.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
-                  </select>
-                </div>
-                {selectedMonth && (
-                  <div style={{ marginTop: 4 }}>
-                    {[
-                      { label: 'Spending', value: monthlyStats.total, color: '#1a1a1a' },
-                      { label: 'Income', value: monthlyStats.income, color: '#2A6030' },
-                      { label: 'Needs', value: monthlyStats.needs, color: catColors['Needs'].color },
-                      { label: 'Wants', value: monthlyStats.wants, color: catColors['Wants'].color },
-                      { label: 'Impulse', value: monthlyStats.impulse, color: catColors['Impulse'].color },
-                    ].map(row => (
-                      <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '0.5px solid #f0f0f0' }}>
-                        <span style={{ fontSize: 14, color: '#888' }}>{row.label}</span>
-                        <span style={{ fontSize: 16, fontWeight: 600, color: row.color }}>{fmt(row.value)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── TRANSACTIONS TAB ── */}
+          {/* TRANSACTIONS TAB */}
           {tab === 'transactions' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ padding: '0 20px', marginBottom: 12 }}>
@@ -432,7 +357,7 @@ export default function App() {
             </div>
           )}
 
-          {/* ── BALANCES TAB ── */}
+          {/* BALANCES TAB */}
           {tab === 'balances' && (
             <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 24 }}>Balances</div>
@@ -488,7 +413,7 @@ export default function App() {
             </div>
           )}
 
-          {/* ── BUDGET TAB ── */}
+          {/* BUDGET TAB */}
           {tab === 'budget' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ padding: '0 20px', marginBottom: 16 }}>
@@ -517,7 +442,66 @@ export default function App() {
             </div>
           )}
 
-          {/* ── ARCHIVE TAB ── */}
+          {/* SUMMARY TAB */}
+          {tab === 'summary' && (
+            <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Summary</div>
+                <button onClick={connectBank} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
+                  {linked ? 'Reconnect' : 'Connect'}
+                </button>
+              </div>
+
+              <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Year to Date</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Spending</div><div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>{fmt(ytdStats.total)}</div></div>
+                <div><div style={{ fontSize: 10, color: '#2A6030', marginBottom: 4 }}>Income</div><div style={{ fontSize: 22, fontWeight: 700, color: '#2A6030' }}>{fmt(ytdStats.income)}</div></div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 28 }}>
+                <div><div style={{ fontSize: 10, color: catColors['Needs'].color, marginBottom: 4 }}>Needs</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Needs'].color }}>{fmt(ytdStats.needs)}</div></div>
+                <div><div style={{ fontSize: 10, color: catColors['Wants'].color, marginBottom: 4 }}>Wants</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Wants'].color }}>{fmt(ytdStats.wants)}</div></div>
+                <div><div style={{ fontSize: 10, color: catColors['Impulse'].color, marginBottom: 4 }}>Impulse</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Impulse'].color }}>{fmt(ytdStats.impulse)}</div></div>
+              </div>
+
+              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20, marginBottom: 28 }}>
+                <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Net Worth</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Assets</div><div style={{ fontSize: 18, fontWeight: 700, color: '#3A5068' }}>{fmt(positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0))}</div></div>
+                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Debts</div><div style={{ fontSize: 18, fontWeight: 700, color: '#683A52' }}>{fmt(negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) + manualDebt)}</div></div>
+                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Net</div><div style={{ fontSize: 18, fontWeight: 700, color: netWorth >= 0 ? '#3A6850' : '#b04040' }}>{fmtSigned(netWorth)}</div></div>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly Breakdown</div>
+                  <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
+                    style={{ fontSize: 13, padding: '6px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: 'white', color: '#1a1a1a', cursor: 'pointer' }}>
+                    <option value="">Select month</option>
+                    {availableMonths.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
+                  </select>
+                </div>
+                {selectedMonth && (
+                  <div>
+                    {[
+                      { label: 'Spending', value: monthlyStats.total, color: '#1a1a1a' },
+                      { label: 'Income', value: monthlyStats.income, color: '#2A6030' },
+                      { label: 'Needs', value: monthlyStats.needs, color: catColors['Needs'].color },
+                      { label: 'Wants', value: monthlyStats.wants, color: catColors['Wants'].color },
+                      { label: 'Impulse', value: monthlyStats.impulse, color: catColors['Impulse'].color },
+                    ].map(row => (
+                      <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '0.5px solid #f0f0f0' }}>
+                        <span style={{ fontSize: 14, color: '#888' }}>{row.label}</span>
+                        <span style={{ fontSize: 16, fontWeight: 600, color: row.color }}>{fmt(row.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ARCHIVE TAB */}
           {tab === 'archive' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ padding: '0 20px', marginBottom: 16 }}>
@@ -547,7 +531,7 @@ export default function App() {
 
         </div>
 
-        {/* ── Bottom Tab Bar ── */}
+        {/* Bottom Tab Bar */}
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
           background: 'rgba(255,255,255,0.92)',
@@ -555,7 +539,7 @@ export default function App() {
           WebkitBackdropFilter: 'blur(20px)',
           borderTop: '0.5px solid #efefef',
           paddingBottom: 'env(safe-area-inset-bottom)',
-          display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+          display: 'flex', justifyContent: 'space-evenly', alignItems: 'center',
           height: TAB_H, zIndex: 100,
         }}>
           {TABS.map(({ id, label, Icon }) => (
