@@ -297,7 +297,7 @@ export default function App() {
   return (
     <>
       <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async />
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#fff', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#fff', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', overflowX: 'hidden' }}>
 
         {pulling && <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: '#aaa' }}>Refreshing…</div>}
 
