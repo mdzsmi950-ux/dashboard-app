@@ -19,7 +19,8 @@ export type Account = {
   type: string;
   subtype: string;
   mask: string | null;
-  balances: { current: number; available: number | null; };
+  current_balance: number | null;
+  available_balance: number | null;
 };
 
 export type Bill = {

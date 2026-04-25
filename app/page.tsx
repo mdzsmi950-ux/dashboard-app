@@ -143,7 +143,10 @@ export default function App() {
     setLoading(false);
   };
   const fetchAccounts = async () => {
-    try { const d = await fetch("/api/balances").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setAccounts(safe); localStorage.setItem("cache_accounts", JSON.stringify(safe)); } catch {}
+    try { const d = await fetch("/api/balances").then(r => r.json()); setAccounts(Array.isArray(d) ? d : []); } catch {}
+  };
+  const syncBalancesFromPlaid = async () => {
+    try { await fetch("/api/balances", { method: "POST" }); } catch {}
   };
   const fetchManualAccounts = async () => {
     try { const d = await fetch("/api/manual-accounts").then(r => r.json()); setManualAccountsDb(Array.isArray(d) ? d : []); } catch {}
@@ -165,6 +168,7 @@ export default function App() {
       const todayStr = new Date().toISOString().split('T')[0];
       if (lastSync !== todayStr) {
         try { await fetch('/api/transactions'); } catch {}
+        await syncBalancesFromPlaid();
         localStorage.setItem('last_plaid_sync', todayStr);
         // Reload transactions after sync
         fetchFromSupabase();
@@ -293,8 +297,8 @@ export default function App() {
   }, [manualAccountsDb, txns, archivedTxns]);
 
   const manualDebt = manualWithBalance.reduce((s, a) => s + a.effectiveBalance, 0);
-  const netWorth = positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0)
-    - negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) - manualDebt;
+  const netWorth = positiveAccounts.reduce((s, a) => s + (a.current_balance || 0), 0)
+    - negativeAccounts.reduce((s, a) => s + (a.current_balance || 0), 0) - manualDebt;
 
   const maddieBills = bills.filter(b => b.account === 'maddie');
   const maddieIncome = income.filter(p => p.account === 'maddie');
@@ -384,7 +388,7 @@ export default function App() {
                         <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{a.name}</div>
                         <div style={{ fontSize: 11, color: '#aaa', marginTop: 2, textTransform: 'capitalize' }}>{a.subtype}</div>
                       </div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#3A5068' }}>{fmt(a.balances.current || 0)}</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#3A5068' }}>{fmt(a.current_balance || 0)}</div>
                     </div>
                   ))}
                   <div style={{ marginBottom: 28 }} />
@@ -399,7 +403,7 @@ export default function App() {
                         <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{a.name}</div>
                         <div style={{ fontSize: 11, color: '#aaa', marginTop: 2, textTransform: 'capitalize' }}>{a.subtype}</div>
                       </div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#683A52' }}>{fmt(a.balances.current || 0)}</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#683A52' }}>{fmt(a.current_balance || 0)}</div>
                     </div>
                   ))}
                   {manualWithBalance.map(ma => (
@@ -470,8 +474,8 @@ export default function App() {
               <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20, marginBottom: 28 }}>
                 <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Net Worth</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Assets</div><div style={{ fontSize: 18, fontWeight: 700, color: '#3A5068' }}>{fmt(positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0))}</div></div>
-                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Debts</div><div style={{ fontSize: 18, fontWeight: 700, color: '#683A52' }}>{fmt(negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) + manualDebt)}</div></div>
+                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Assets</div><div style={{ fontSize: 18, fontWeight: 700, color: '#3A5068' }}>{fmt(positiveAccounts.reduce((s, a) => s + (a.current_balance || 0), 0))}</div></div>
+                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Debts</div><div style={{ fontSize: 18, fontWeight: 700, color: '#683A52' }}>{fmt(negativeAccounts.reduce((s, a) => s + (a.current_balance || 0), 0) + manualDebt)}</div></div>
                   <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Net</div><div style={{ fontSize: 18, fontWeight: 700, color: netWorth >= 0 ? '#3A6850' : '#b04040' }}>{fmtSigned(netWorth)}</div></div>
                 </div>
               </div>
