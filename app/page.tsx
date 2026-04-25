@@ -315,21 +315,16 @@ export default function App() {
                 </button>
               </div>
 
-              {/* YTD — minimal list style */}
+              {/* YTD — grid style like net worth */}
               <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Year to Date</div>
-              <div style={{ marginBottom: 28 }}>
-                {[
-                  { label: 'Spending', value: ytdStats.total, color: '#1a1a1a' },
-                  { label: 'Income', value: ytdStats.income, color: '#2A6030' },
-                  { label: 'Needs', value: ytdStats.needs, color: catColors['Needs'].color },
-                  { label: 'Wants', value: ytdStats.wants, color: catColors['Wants'].color },
-                  { label: 'Impulse', value: ytdStats.impulse, color: catColors['Impulse'].color },
-                ].map(row => (
-                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '0.5px solid #f0f0f0' }}>
-                    <span style={{ fontSize: 14, color: '#888' }}>{row.label}</span>
-                    <span style={{ fontSize: 16, fontWeight: 600, color: row.color }}>{fmt(row.value)}</span>
-                  </div>
-                ))}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Spending</div><div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a' }}>{fmt(ytdStats.total)}</div></div>
+                <div><div style={{ fontSize: 10, color: '#2A6030', marginBottom: 4 }}>Income</div><div style={{ fontSize: 18, fontWeight: 700, color: '#2A6030' }}>{fmt(ytdStats.income)}</div></div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 28 }}>
+                <div><div style={{ fontSize: 10, color: catColors['Needs'].color, marginBottom: 4 }}>Needs</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Needs'].color }}>{fmt(ytdStats.needs)}</div></div>
+                <div><div style={{ fontSize: 10, color: catColors['Wants'].color, marginBottom: 4 }}>Wants</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Wants'].color }}>{fmt(ytdStats.wants)}</div></div>
+                <div><div style={{ fontSize: 10, color: catColors['Impulse'].color, marginBottom: 4 }}>Impulse</div><div style={{ fontSize: 18, fontWeight: 700, color: catColors['Impulse'].color }}>{fmt(ytdStats.impulse)}</div></div>
               </div>
 
               {/* Net worth */}
