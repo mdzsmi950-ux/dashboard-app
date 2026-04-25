@@ -149,7 +149,7 @@ export default function App() {
     try { const d = await fetch('/api/manual-accounts').then(r => r.json()); setManualAccountsDb(d); } catch {}
   };
   const fetchBudget = useCallback(async () => {
-    try { const { bills, income } = await fetch('/api/budget').then(r => r.json()); setBills(bills); setIncome(income); } catch {}
+    try { const data = await fetch('/api/budget').then(r => r.json()); setBills(data.bills || []); setIncome(data.income || []); } catch {}
   }, []);
   const fetchArchived = useCallback(async () => {
     try { const d = await fetch('/api/transactions/archived').then(r => r.json()); setArchivedTxns(d); localStorage.setItem('cache_archived', JSON.stringify(d)); } catch {}
