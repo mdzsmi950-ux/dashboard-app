@@ -157,16 +157,19 @@ export default function App() {
 
   useEffect(() => {
     const init = async () => {
+      // Always show Supabase data immediately
+      await Promise.all([fetchFromSupabase(), fetchArchived(), fetchManualAccounts(), fetchBudget()]);
+
+      // Then sync with Plaid once per day in background
       const lastSync = localStorage.getItem('last_plaid_sync');
       const todayStr = new Date().toISOString().split('T')[0];
       if (lastSync !== todayStr) {
-        setLoading(true);
-        try { await fetch("/api/transactions"); } catch {}
-        try { await fetchAccounts(); } catch {}
+        try { await fetch('/api/transactions'); } catch {}
         localStorage.setItem('last_plaid_sync', todayStr);
-        setLoading(false);
+        // Reload transactions after sync
+        fetchFromSupabase();
+        fetchArchived();
       }
-      await Promise.all([fetchFromSupabase(), fetchArchived(), fetchManualAccounts(), fetchBudget()]);
     };
     init();
   }, [fetchBudget, fetchArchived]);
