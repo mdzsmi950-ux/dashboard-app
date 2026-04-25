@@ -16,7 +16,7 @@ type Props = {
 
 const myShare = (t: Txn) => {
   if (!t.label || t.label === 'Ignore' || t.category === 'Income') return 0;
-  return t.label === 'Joint' ? t.amount / 2 : t.label === 'Maddie' ? t.amount : 0;
+  return t.label === 'Joint' ? t.amount / 2 : t.label === 'Mine' ? t.amount : 0;
 };
 
 const monthStats = (mTxns: Txn[]) => ({
