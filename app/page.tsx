@@ -56,65 +56,6 @@ export default function Page() {
     setMaddieBills(bills.filter(b => b.account === 'maddie'));
     setNickBills(bills.filter(b => b.account === 'joint'));
     setMaddieIncome(income.filter(p => p.account === 'maddie'));
-cat > app/page.tsx << 'EOF'
-'use client';
-
-import { useEffect, useState } from 'react';
-import TransactionsTab from './components/TransactionsTab';
-import ArchiveTab from './components/ArchiveTab';
-import SpendingTab from './components/SpendingTab';
-import BalancesTab from './components/BalancesTab';
-import BudgetAccount from './components/BudgetAccount';
-import type { Txn, Account, ManualAccount, Bill, BudgetIncome } from './components/types';
-
-type Tab = 'transactions' | 'archive' | 'spending' | 'balances' | 'budget';
-
-export default function Page() {
-  const [tab, setTab] = useState<Tab>('transactions');
-  const [txns, setTxns] = useState<Txn[]>([]);
-  const [archivedTxns, setArchivedTxns] = useState<Txn[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [manualAccountsDb, setManualAccountsDb] = useState<ManualAccount[]>([]);
-  const [maddieBills, setMaddieBills] = useState<Bill[]>([]);
-  const [nickBills, setNickBills] = useState<Bill[]>([]);
-  const [maddieIncome, setMaddieIncome] = useState<BudgetIncome[]>([]);
-  const [nickIncome, setNickIncome] = useState<BudgetIncome[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadTxns = async () => {
-    setLoading(true);
-    const res = await fetch('/api/transactions');
-    const data = await res.json();
-    setTxns(data || []);
-    setLoading(false);
-  };
-
-  const loadArchived = async () => {
-    const res = await fetch('/api/transactions/archived');
-    const data = await res.json();
-    setArchivedTxns(data || []);
-  };
-
-  const loadAccounts = async () => {
-    const res = await fetch('/api/balances');
-    const data = await res.json();
-    setAccounts(Array.isArray(data) ? data : []);
-  };
-
-  const loadManualAccounts = async () => {
-    const res = await fetch('/api/manual-accounts');
-    const data = await res.json();
-    setManualAccountsDb(Array.isArray(data) ? data : []);
-  };
-
-  const loadBudget = async () => {
-    const res = await fetch('/api/budget');
-    const data = await res.json();
-    const bills: Bill[] = data.bills || [];
-    const income: BudgetIncome[] = data.income || [];
-    setMaddieBills(bills.filter(b => b.account === 'maddie'));
-    setNickBills(bills.filter(b => b.account === 'joint'));
-    setMaddieIncome(income.filter(p => p.account === 'maddie'));
     setNickIncome(income.filter(p => p.account === 'joint'));
   };
 
