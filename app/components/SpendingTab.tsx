@@ -1,3 +1,4 @@
+'use client';
 import { Txn } from './types';
 import SpendingRow from './SpendingRow';
 import { fmt, myShare } from './constants';
