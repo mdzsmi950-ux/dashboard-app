@@ -50,7 +50,6 @@ const pill = (active: boolean, colors: { bg: string; border: string; color: stri
   fontWeight: active ? 500 : 400,
 } as const);
 
-}
 
 function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: string, v: any) => void }) {
   return (

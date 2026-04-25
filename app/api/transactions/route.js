@@ -28,9 +28,19 @@ async function fetchAllTransactions(accessToken, startDate, endDate) {
 }
 
 export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const forceResync = searchParams.get('resync') === 'true';
+
   const { data: tokenRows } = await supabase.from('access_tokens').select('token');
   const end = new Date().toISOString().split('T')[0];
-  const start = '2026-01-01';
+
+  // Normal refresh = last 30 days only (fast)
+  // resync=true = full year from Jan 1 (slow, use sparingly)
+  const start = forceResync ? '2026-01-01' : (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d.toISOString().split('T')[0];
+  })();
 
   for (const row of tokenRows) {
     try {
@@ -71,7 +81,6 @@ export async function GET(req) {
 
         if (existingByContent) continue;
 
-        // Safe to insert
         await supabase.from('transactions').insert({
           id: t.transaction_id,
           date: t.date,
