@@ -91,8 +91,6 @@ export async function GET(req) {
           category: null,
           notes: '',
           archived: false,
-          label_archived: false,
-          category_archived: false,
         });
       }
     } catch (e) {
@@ -103,7 +101,7 @@ export async function GET(req) {
   const { data: saved } = await supabase
     .from('transactions')
     .select('*')
-    .eq('label_archived', false)
+    .eq('archived', false)
     .order('date', { ascending: false });
 
   return NextResponse.json(saved);

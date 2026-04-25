@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   const { month, type } = await req.json();
-  const field = type === 'category' ? 'category_archived' : 'label_archived';
+  const field = 'archived';
   await supabase
     .from('transactions')
     .update({ [field]: true })

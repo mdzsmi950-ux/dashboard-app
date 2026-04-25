@@ -10,7 +10,7 @@ export type Txn = {
   label: Label | null;
   category: Category | null;
   notes: string;
-  label_archived: boolean;
+  archived: boolean;
 };
 
 export type Account = {
