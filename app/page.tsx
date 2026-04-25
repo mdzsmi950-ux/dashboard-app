@@ -36,10 +36,10 @@ const IconBudget = () => (
 );
 
 const TABS = [
-  { id: 'summary', label: 'Summary', Icon: IconSummary },
   { id: 'transactions', label: 'Transactions', Icon: IconTxn },
   { id: 'balances', label: 'Balances', Icon: IconBalance },
   { id: 'budget', label: 'Budget', Icon: IconBudget },
+  { id: 'summary', label: 'Summary', Icon: IconSummary },
   { id: 'archive', label: 'Archive', Icon: IconArchive },
 ];
 
