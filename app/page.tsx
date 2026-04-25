@@ -1,4 +1,4 @@
-\'use client';
+'use client';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Txn, Account, Bill, BudgetIncome, ManualAccount, Category, Label } from './components/types';
 import { fmt, fmtSigned, today, myShare, incomeShare, catColors, labelColors, monthLabel } from './components/constants';
