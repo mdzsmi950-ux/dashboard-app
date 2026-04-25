@@ -35,7 +35,6 @@ const IconBudget = () => (
   </svg>
 );
 
-// ── Styles ─────────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'summary', label: 'Summary', Icon: IconSummary },
   { id: 'transactions', label: 'Transactions', Icon: IconTxn },
@@ -52,12 +51,10 @@ const pill = (active: boolean, colors: { bg: string; border: string; color: stri
   fontWeight: active ? 500 : 400,
 } as const);
 
-// ── Pull to refresh hook ───────────────────────────────────────────────────
 function usePullToRefresh(onRefresh: () => Promise<void>) {
   const [pulling, setPulling] = useState(false);
   const startY = useRef(0);
   const el = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const node = el.current;
     if (!node) return;
@@ -70,11 +67,18 @@ function usePullToRefresh(onRefresh: () => Promise<void>) {
     node.addEventListener('touchend', onTouchEnd, { passive: true });
     return () => { node.removeEventListener('touchstart', onTouchStart); node.removeEventListener('touchend', onTouchEnd); };
   }, [onRefresh]);
-
   return { el, pulling };
 }
 
-// ── TxnCard ────────────────────────────────────────────────────────────────
+function StatCard({ label, value, bg, color, border }: { label: string; value: number; bg: string; color: string; border?: string }) {
+  return (
+    <div style={{ background: bg, borderRadius: 16, padding: '14px 16px', border: border ? `0.5px solid ${border}` : 'none' }}>
+      <div style={{ fontSize: 10, color, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6, opacity: 0.8 }}>{label}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color }}>{fmt(value)}</div>
+    </div>
+  );
+}
+
 function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: string, v: any) => void }) {
   return (
     <div style={{ padding: '14px 0', borderBottom: '0.5px solid #f0f0f0' }}>
@@ -89,23 +93,18 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
       </div>
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
         {(['Maddie', 'Nick', 'Joint', 'Ignore'] as Label[]).map(l => (
-          <button key={l} onClick={(e) => { e.preventDefault(); updateField(t.id, 'label', l); }}
-            style={pill(t.label === l, labelColors[l])}>{l}</button>
+          <button key={l} onClick={(e) => { e.preventDefault(); updateField(t.id, 'label', l); }} style={pill(t.label === l, labelColors[l])}>{l}</button>
         ))}
         <span style={{ color: '#e8e8e8', fontSize: 11, padding: '3px 2px' }}>·</span>
         {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
           const disabled = t.label === 'Nick' || t.label === 'Ignore' || !t.label;
-          return (
-            <button key={cat} onClick={(e) => { e.preventDefault(); if (!disabled) updateField(t.id, 'category', cat); }}
-              style={pill(!disabled && t.category === cat, catColors[cat])}>{cat}</button>
-          );
+          return <button key={cat} onClick={(e) => { e.preventDefault(); if (!disabled) updateField(t.id, 'category', cat); }} style={pill(!disabled && t.category === cat, catColors[cat])}>{cat}</button>;
         })}
       </div>
     </div>
   );
 }
 
-// ── ArchiveCard ────────────────────────────────────────────────────────────
 function ArchiveCard({ t }: { t: Txn }) {
   return (
     <div style={{ padding: '12px 0', borderBottom: '0.5px solid #f0f0f0' }}>
@@ -126,7 +125,6 @@ function ArchiveCard({ t }: { t: Txn }) {
   );
 }
 
-// ── Main App ───────────────────────────────────────────────────────────────
 export default function App() {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [archivedTxns, setArchivedTxns] = useState<Txn[]>([]);
@@ -137,7 +135,9 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [linked, setLinked] = useState(false);
   const [tab, setTab] = useState('transactions');
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [budgetSubtab, setBudgetSubtab] = useState<'maddie' | 'joint'>('maddie');
+  const [archiveSearch, setArchiveSearch] = useState('');
 
   useEffect(() => {
     try {
@@ -210,26 +210,34 @@ export default function App() {
     return [...txns, ...archivedTxns].filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
   }, [txns, archivedTxns]);
 
-  // Available months for picker
   const availableMonths = useMemo(() => {
     const months = new Set<string>();
     allTxns.forEach(t => months.add(t.date.slice(0, 7)));
     return Array.from(months).sort((a, b) => b.localeCompare(a));
   }, [allTxns]);
 
-  // Filtered transactions for selected month
-  const filteredByMonth = useMemo(() => {
-    if (!selectedMonth) return allTxns;
+  // YTD stats (always full year)
+  const ytdStats = useMemo(() => ({
+    total: allTxns.reduce((s, t) => s + myShare(t), 0),
+    income: allTxns.reduce((s, t) => s + incomeShare(t), 0),
+    needs: allTxns.filter(t => t.category === 'Needs').reduce((s, t) => s + myShare(t), 0),
+    wants: allTxns.filter(t => t.category === 'Wants').reduce((s, t) => s + myShare(t), 0),
+    impulse: allTxns.filter(t => t.category === 'Impulse').reduce((s, t) => s + myShare(t), 0),
+  }), [allTxns]);
+
+  // Monthly stats (filtered by selected month)
+  const monthlyTxns = useMemo(() => {
+    if (!selectedMonth) return [];
     return allTxns.filter(t => t.date.startsWith(selectedMonth));
   }, [allTxns, selectedMonth]);
 
-  const stats = useMemo(() => ({
-    total: filteredByMonth.reduce((s, t) => s + myShare(t), 0),
-    income: filteredByMonth.reduce((s, t) => s + incomeShare(t), 0),
-    needs: filteredByMonth.filter(t => t.category === 'Needs').reduce((s, t) => s + myShare(t), 0),
-    wants: filteredByMonth.filter(t => t.category === 'Wants').reduce((s, t) => s + myShare(t), 0),
-    impulse: filteredByMonth.filter(t => t.category === 'Impulse').reduce((s, t) => s + myShare(t), 0),
-  }), [filteredByMonth]);
+  const monthlyStats = useMemo(() => ({
+    total: monthlyTxns.reduce((s, t) => s + myShare(t), 0),
+    income: monthlyTxns.reduce((s, t) => s + incomeShare(t), 0),
+    needs: monthlyTxns.filter(t => t.category === 'Needs').reduce((s, t) => s + myShare(t), 0),
+    wants: monthlyTxns.filter(t => t.category === 'Wants').reduce((s, t) => s + myShare(t), 0),
+    impulse: monthlyTxns.filter(t => t.category === 'Impulse').reduce((s, t) => s + myShare(t), 0),
+  }), [monthlyTxns]);
 
   const SPENDABLE = new Set(['savings', 'checking']);
   const EXCL_MASKS = new Set(['7070']);
@@ -250,7 +258,6 @@ export default function App() {
   const netWorth = positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0)
     - negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) - manualDebt;
 
-  // Txns by month for transactions tab
   const txnsByMonth = useMemo(() => {
     const map: Record<string, Txn[]> = {};
     txns.forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
@@ -281,88 +288,77 @@ export default function App() {
   const handleAddBill = (account: string) => (bill: any) => budgetApi('upsert', 'budget_bills', { id: Date.now(), account, ...bill, paid: false });
   const handleAddIncome = (account: string) => (inc: any) => budgetApi('upsert', 'budget_income', { id: Date.now(), account, ...inc });
 
+  const filteredArchive = useMemo(() => {
+    if (!archiveSearch.trim()) return archivedTxns;
+    return archivedTxns.filter(t => t.merchant.toLowerCase().includes(archiveSearch.toLowerCase()));
+  }, [archivedTxns, archiveSearch]);
+
   const TAB_H = 72;
-  const contentStyle: React.CSSProperties = {
-    flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
-    paddingBottom: TAB_H + 16,
-  };
 
   return (
     <>
       <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async />
       <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#fff', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>
 
-        {/* Pull indicator */}
-        {pulling && (
-          <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: '#aaa' }}>Refreshing…</div>
-        )}
+        {pulling && <div style={{ textAlign: 'center', padding: '8px', fontSize: 12, color: '#aaa' }}>Refreshing…</div>}
 
-        {/* Scrollable content */}
-        <div ref={scrollRef} style={contentStyle}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
 
           {/* ── SUMMARY TAB ── */}
           {tab === 'summary' && (
             <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <div>
-                  <div style={{ fontSize: 12, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Overview</div>
-                  <div style={{ fontSize: 26, fontWeight: 700, color: '#1a1a1a', marginTop: 2 }}>{fmt(stats.total)}</div>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Summary</div>
                 <button onClick={connectBank} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
                   {linked ? 'Reconnect' : 'Connect'}
                 </button>
               </div>
 
-              {/* Month picker */}
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 24, WebkitOverflowScrolling: 'touch' }}>
-                <button onClick={() => setSelectedMonth(null)} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 20, border: `0.5px solid ${!selectedMonth ? '#1a1a1a' : '#e0e0e0'}`, background: !selectedMonth ? '#1a1a1a' : 'white', color: !selectedMonth ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>YTD</button>
-                {availableMonths.map(m => (
-                  <button key={m} onClick={() => setSelectedMonth(m)} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 20, border: `0.5px solid ${selectedMonth === m ? '#1a1a1a' : '#e0e0e0'}`, background: selectedMonth === m ? '#1a1a1a' : 'white', color: selectedMonth === m ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>{monthLabel(m)}</button>
-                ))}
+              {/* YTD cards — always full year */}
+              <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Year to Date</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                <StatCard label="Spending" value={ytdStats.total} bg="#f8f8f8" color="#1a1a1a" />
+                <StatCard label="Income" value={ytdStats.income} bg="#E8F4E8" color="#2A6030" border="#A0D0A0" />
               </div>
-
-              {/* Stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                <div style={{ background: '#f8f8f8', borderRadius: 16, padding: '16px' }}>
-                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Spending</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>{fmt(stats.total)}</div>
-                </div>
-                <div style={{ background: '#E8F4E8', borderRadius: 16, padding: '16px' }}>
-                  <div style={{ fontSize: 11, color: '#2A6030', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Income</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: '#2A6030' }}>{fmt(stats.income)}</div>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 28 }}>
-                {[
-                  { label: 'Needs', val: stats.needs, ...catColors['Needs'] },
-                  { label: 'Wants', val: stats.wants, ...catColors['Wants'] },
-                  { label: 'Impulse', val: stats.impulse, ...catColors['Impulse'] },
-                ].map(c => (
-                  <div key={c.label} style={{ background: c.bg, borderRadius: 14, padding: '12px' }}>
-                    <div style={{ fontSize: 10, color: c.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{c.label}</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: c.color }}>{fmt(c.val)}</div>
-                  </div>
-                ))}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 28 }}>
+                <StatCard label="Needs" value={ytdStats.needs} bg={catColors['Needs'].bg} color={catColors['Needs'].color} border={catColors['Needs'].border} />
+                <StatCard label="Wants" value={ytdStats.wants} bg={catColors['Wants'].bg} color={catColors['Wants'].color} border={catColors['Wants'].border} />
+                <StatCard label="Impulse" value={ytdStats.impulse} bg={catColors['Impulse'].bg} color={catColors['Impulse'].color} border={catColors['Impulse'].border} />
               </div>
 
               {/* Net worth */}
-              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20 }}>
-                <div style={{ fontSize: 12, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Net Worth</div>
+              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20, marginBottom: 28 }}>
+                <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Net Worth</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 4 }}>Assets</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#3A5068' }}>{fmt(positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0))}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 4 }}>Debts</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#683A52' }}>{fmt(negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) + manualDebt)}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 4 }}>Net</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: netWorth >= 0 ? '#3A6850' : '#b04040' }}>{fmtSigned(netWorth)}</div>
-                  </div>
+                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Assets</div><div style={{ fontSize: 18, fontWeight: 700, color: '#3A5068' }}>{fmt(positiveAccounts.reduce((s, a) => s + (a.balances.current || 0), 0))}</div></div>
+                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Debts</div><div style={{ fontSize: 18, fontWeight: 700, color: '#683A52' }}>{fmt(negativeAccounts.reduce((s, a) => s + (a.balances.current || 0), 0) + manualDebt)}</div></div>
+                  <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Net</div><div style={{ fontSize: 18, fontWeight: 700, color: netWorth >= 0 ? '#3A6850' : '#b04040' }}>{fmtSigned(netWorth)}</div></div>
                 </div>
+              </div>
+
+              {/* Month breakdown */}
+              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly Breakdown</div>
+                  <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
+                    style={{ fontSize: 13, padding: '6px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: 'white', color: '#1a1a1a', cursor: 'pointer' }}>
+                    <option value="">Select month</option>
+                    {availableMonths.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
+                  </select>
+                </div>
+                {selectedMonth && (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                      <StatCard label="Spending" value={monthlyStats.total} bg="#f8f8f8" color="#1a1a1a" />
+                      <StatCard label="Income" value={monthlyStats.income} bg="#E8F4E8" color="#2A6030" border="#A0D0A0" />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                      <StatCard label="Needs" value={monthlyStats.needs} bg={catColors['Needs'].bg} color={catColors['Needs'].color} border={catColors['Needs'].border} />
+                      <StatCard label="Wants" value={monthlyStats.wants} bg={catColors['Wants'].bg} color={catColors['Wants'].color} border={catColors['Wants'].border} />
+                      <StatCard label="Impulse" value={monthlyStats.impulse} bg={catColors['Impulse'].bg} color={catColors['Impulse'].color} border={catColors['Impulse'].border} />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -370,18 +366,15 @@ export default function App() {
           {/* ── TRANSACTIONS TAB ── */}
           {tab === 'transactions' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
-              <div style={{ padding: '0 20px', marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
-                  <button onClick={() => refreshAll()} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Refresh</button>
-                </div>
+              <div style={{ padding: '0 20px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
+                <button onClick={() => refreshAll()} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Refresh</button>
               </div>
-
               {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>Loading…</div>}
               {!loading && txns.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: '#aaa' }}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}>🏦</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#555', marginBottom: 8 }}>No transactions yet</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#555', marginBottom: 16 }}>No transactions yet</div>
                   <button onClick={connectBank} style={{ fontSize: 13, padding: '10px 20px', borderRadius: 20, border: 'none', background: '#1a1a1a', color: 'white', cursor: 'pointer' }}>Connect Bank</button>
                 </div>
               )}
@@ -416,11 +409,10 @@ export default function App() {
           {tab === 'balances' && (
             <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 24 }}>Balances</div>
-
               {displayPositive.length > 0 && (
                 <>
                   <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Assets</div>
-                  {displayPositive.map((a, i) => (
+                  {displayPositive.map(a => (
                     <div key={a.account_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '0.5px solid #f0f0f0' }}>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{a.name}</div>
@@ -432,7 +424,6 @@ export default function App() {
                   <div style={{ marginBottom: 28 }} />
                 </>
               )}
-
               {(displayNegative.length > 0 || manualWithBalance.length > 0) && (
                 <>
                   <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Debts</div>
@@ -472,11 +463,29 @@ export default function App() {
 
           {/* ── BUDGET TAB ── */}
           {tab === 'budget' && (
-            <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 24 }}>Budget</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <BudgetAccount title="Maddie — personal" bills={maddieBills} income={maddieIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('maddie')} onAddIncome={handleAddIncome('maddie')} />
-                <BudgetAccount title="Joint account" bills={jointBills} income={jointIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('joint')} onAddIncome={handleAddIncome('joint')} />
+            <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
+              <div style={{ padding: '0 20px', marginBottom: 16 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>Budget</div>
+                <div style={{ display: 'flex', gap: 0, background: '#f5f5f5', borderRadius: 10, padding: 3 }}>
+                  {(['maddie', 'joint'] as const).map(sub => (
+                    <button key={sub} onClick={() => setBudgetSubtab(sub)} style={{
+                      flex: 1, padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                      background: budgetSubtab === sub ? 'white' : 'transparent',
+                      color: budgetSubtab === sub ? '#1a1a1a' : '#888',
+                      fontWeight: budgetSubtab === sub ? 600 : 400,
+                      fontSize: 13,
+                      boxShadow: budgetSubtab === sub ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                    }}>{sub === 'maddie' ? 'Maddie' : 'Joint'}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ padding: '0 20px' }}>
+                {budgetSubtab === 'maddie' && (
+                  <BudgetAccount title="Maddie — personal" bills={maddieBills} income={maddieIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('maddie')} onAddIncome={handleAddIncome('maddie')} />
+                )}
+                {budgetSubtab === 'joint' && (
+                  <BudgetAccount title="Joint account" bills={jointBills} income={jointIncome} onTogglePaid={handleTogglePaid} onUpdateAmount={handleUpdateAmount} onDeleteBill={handleDeleteBill} onDeleteIncome={handleDeleteIncome} onAddBill={handleAddBill('joint')} onAddIncome={handleAddIncome('joint')} />
+                )}
               </div>
             </div>
           )}
@@ -484,13 +493,19 @@ export default function App() {
           {/* ── ARCHIVE TAB ── */}
           {tab === 'archive' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
-              <div style={{ padding: '0 20px', marginBottom: 20 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Archive</div>
+              <div style={{ padding: '0 20px', marginBottom: 16 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>Archive</div>
+                <input
+                  placeholder="Search transactions..."
+                  value={archiveSearch}
+                  onChange={e => setArchiveSearch(e.target.value)}
+                  style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #e0e0e0', borderRadius: 10, background: '#f8f8f8', boxSizing: 'border-box' as const }}
+                />
               </div>
-              {archivedTxns.length === 0 && <div style={{ textAlign: 'center', padding: '60px 20px', color: '#aaa', fontSize: 13 }}>No archived transactions yet.</div>}
+              {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>No results.</div>}
               {(() => {
                 const byMonth: Record<string, Txn[]> = {};
-                archivedTxns.forEach(t => { const m = t.date.slice(0, 7); if (!byMonth[m]) byMonth[m] = []; byMonth[m].push(t); });
+                filteredArchive.forEach(t => { const m = t.date.slice(0, 7); if (!byMonth[m]) byMonth[m] = []; byMonth[m].push(t); });
                 return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0])).map(([month, mTxns]) => (
                   <div key={month}>
                     <div style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, color: '#555' }}>{monthLabel(month)}</div>
@@ -514,8 +529,7 @@ export default function App() {
           borderTop: '0.5px solid #efefef',
           paddingBottom: 'env(safe-area-inset-bottom)',
           display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-          height: TAB_H,
-          zIndex: 100,
+          height: TAB_H, zIndex: 100,
         }}>
           {TABS.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setTab(id)} style={{
@@ -523,7 +537,6 @@ export default function App() {
               background: 'none', border: 'none', cursor: 'pointer',
               color: tab === id ? '#1a1a1a' : '#bbb',
               padding: '8px 12px',
-              transition: 'color 0.15s',
             }}>
               <Icon />
               <span style={{ fontSize: 10, fontWeight: tab === id ? 600 : 400 }}>{label}</span>

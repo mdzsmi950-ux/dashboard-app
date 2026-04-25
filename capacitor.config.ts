@@ -1,11 +1,11 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.maddie.dashboard',
-  appName: 'Maddies Dashboard',
+  appId: 'com.maddie.dashboardapp',
+  appName: 'Dashboard',
   webDir: 'out',
   server: {
-    url: 'https://fianance-dashboard-five.vercel.app',
+    url: 'https://dashboard-app-beige-one.vercel.app',
     cleartext: true
   },
   ios: {
