@@ -91,11 +91,12 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
           {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
         {(['Maddie', 'Nick', 'Joint', 'Ignore'] as Label[]).map(l => (
           <button key={l} onClick={(e) => { e.preventDefault(); updateField(t.id, 'label', l); }} style={pill(t.label === l, labelColors[l])}>{l}</button>
         ))}
-        <span style={{ color: '#e8e8e8', fontSize: 11, padding: '3px 2px' }}>·</span>
+      </div>
+      <div style={{ display: 'flex', gap: 4 }}>
         {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
           const disabled = t.label === 'Nick' || t.label === 'Ignore' || !t.label;
           return <button key={cat} onClick={(e) => { e.preventDefault(); if (!disabled) updateField(t.id, 'category', cat); }} style={pill(!disabled && t.category === cat, catColors[cat])}>{cat}</button>;
@@ -306,7 +307,7 @@ export default function App() {
 
           {/* ── SUMMARY TAB ── */}
           {tab === 'summary' && (
-            <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
+            <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Summary</div>
                 <button onClick={connectBank} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
@@ -314,16 +315,21 @@ export default function App() {
                 </button>
               </div>
 
-              {/* YTD cards — always full year */}
-              <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Year to Date</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                <StatCard label="Spending" value={ytdStats.total} bg="#f8f8f8" color="#1a1a1a" />
-                <StatCard label="Income" value={ytdStats.income} bg="#E8F4E8" color="#2A6030" border="#A0D0A0" />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 28 }}>
-                <StatCard label="Needs" value={ytdStats.needs} bg={catColors['Needs'].bg} color={catColors['Needs'].color} border={catColors['Needs'].border} />
-                <StatCard label="Wants" value={ytdStats.wants} bg={catColors['Wants'].bg} color={catColors['Wants'].color} border={catColors['Wants'].border} />
-                <StatCard label="Impulse" value={ytdStats.impulse} bg={catColors['Impulse'].bg} color={catColors['Impulse'].color} border={catColors['Impulse'].border} />
+              {/* YTD — minimal list style */}
+              <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Year to Date</div>
+              <div style={{ marginBottom: 28 }}>
+                {[
+                  { label: 'Spending', value: ytdStats.total, color: '#1a1a1a' },
+                  { label: 'Income', value: ytdStats.income, color: '#2A6030' },
+                  { label: 'Needs', value: ytdStats.needs, color: catColors['Needs'].color },
+                  { label: 'Wants', value: ytdStats.wants, color: catColors['Wants'].color },
+                  { label: 'Impulse', value: ytdStats.impulse, color: catColors['Impulse'].color },
+                ].map(row => (
+                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '0.5px solid #f0f0f0' }}>
+                    <span style={{ fontSize: 14, color: '#888' }}>{row.label}</span>
+                    <span style={{ fontSize: 16, fontWeight: 600, color: row.color }}>{fmt(row.value)}</span>
+                  </div>
+                ))}
               </div>
 
               {/* Net worth */}
@@ -347,17 +353,20 @@ export default function App() {
                   </select>
                 </div>
                 {selectedMonth && (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                      <StatCard label="Spending" value={monthlyStats.total} bg="#f8f8f8" color="#1a1a1a" />
-                      <StatCard label="Income" value={monthlyStats.income} bg="#E8F4E8" color="#2A6030" border="#A0D0A0" />
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                      <StatCard label="Needs" value={monthlyStats.needs} bg={catColors['Needs'].bg} color={catColors['Needs'].color} border={catColors['Needs'].border} />
-                      <StatCard label="Wants" value={monthlyStats.wants} bg={catColors['Wants'].bg} color={catColors['Wants'].color} border={catColors['Wants'].border} />
-                      <StatCard label="Impulse" value={monthlyStats.impulse} bg={catColors['Impulse'].bg} color={catColors['Impulse'].color} border={catColors['Impulse'].border} />
-                    </div>
-                  </>
+                  <div style={{ marginTop: 4 }}>
+                    {[
+                      { label: 'Spending', value: monthlyStats.total, color: '#1a1a1a' },
+                      { label: 'Income', value: monthlyStats.income, color: '#2A6030' },
+                      { label: 'Needs', value: monthlyStats.needs, color: catColors['Needs'].color },
+                      { label: 'Wants', value: monthlyStats.wants, color: catColors['Wants'].color },
+                      { label: 'Impulse', value: monthlyStats.impulse, color: catColors['Impulse'].color },
+                    ].map(row => (
+                      <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '0.5px solid #f0f0f0' }}>
+                        <span style={{ fontSize: 14, color: '#888' }}>{row.label}</span>
+                        <span style={{ fontSize: 16, fontWeight: 600, color: row.color }}>{fmt(row.value)}</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
