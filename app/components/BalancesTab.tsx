@@ -41,7 +41,7 @@ export default function BalancesTab({ accounts, manualAccountsDb, txns, archived
             {displayPositive.map((a, i) => (
               <div key={a.account_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: i === 0 ? 'none' : '0.5px solid #eee' }}>
                 <div><p style={{ fontSize: 13, margin: '0 0 2px' }}>{a.name}</p><p style={{ fontSize: 11, color: '#888', margin: 0, textTransform: 'capitalize' }}>{a.subtype}</p></div>
-                <span style={{ fontSize: 15, fontWeight: 500, color: '#3A5068' }}>{fmt(a.balances.current || 0)}</span>
+                <span style={{ fontSize: 15, fontWeight: 500, color: '#3A5068' }}>{fmt(a.current_balance || 0)}</span>
               </div>
             ))}
           </div>
@@ -54,7 +54,7 @@ export default function BalancesTab({ accounts, manualAccountsDb, txns, archived
             {displayNegative.map((a, i) => (
               <div key={a.account_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: i === 0 ? 'none' : '0.5px solid #eee' }}>
                 <div><p style={{ fontSize: 13, margin: '0 0 2px' }}>{a.name}</p><p style={{ fontSize: 11, color: '#888', margin: 0, textTransform: 'capitalize' }}>{a.subtype}</p></div>
-                <span style={{ fontSize: 15, fontWeight: 500, color: '#683A52' }}>{fmt(a.balances.current || 0)}</span>
+                <span style={{ fontSize: 15, fontWeight: 500, color: '#683A52' }}>{fmt(a.current_balance || 0)}</span>
               </div>
             ))}
             {manualAccountsWithBalance.map((ma, i) => (
