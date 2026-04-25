@@ -1,187 +1,281 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
+import TransactionsTab from './components/TransactionsTab';
+import ArchiveTab from './components/ArchiveTab';
+import SpendingTab from './components/SpendingTab';
+import BalancesTab from './components/BalancesTab';
+import BudgetAccount from './components/BudgetAccount';
+import type { Txn, Account, ManualAccount, Bill, BudgetIncome } from './components/types';
 
-type Txn = {
-  id: string
-  name: string
-  amount: number
-  date: string
-  label: string | null
-  category: string | null
-  archived: boolean
-}
+type Tab = 'transactions' | 'archive' | 'spending' | 'balances' | 'budget';
 
 export default function Page() {
-  const [activeTxns, setActiveTxns] = useState<Txn[]>([])
-  const [archivedTxns, setArchivedTxns] = useState<Txn[]>([])
-  const [tab, setTab] = useState<'active' | 'archived'>('active')
-  const [touchStartX, setTouchStartX] = useState<number | null>(null)
+  const [tab, setTab] = useState<Tab>('transactions');
+  const [txns, setTxns] = useState<Txn[]>([]);
+  const [archivedTxns, setArchivedTxns] = useState<Txn[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [manualAccountsDb, setManualAccountsDb] = useState<ManualAccount[]>([]);
+  const [maddieBills, setMaddieBills] = useState<Bill[]>([]);
+  const [nickBills, setNickBills] = useState<Bill[]>([]);
+  const [maddieIncome, setMaddieIncome] = useState<BudgetIncome[]>([]);
+  const [nickIncome, setNickIncome] = useState<BudgetIncome[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadTxns = async () => {
+    setLoading(true);
+    const res = await fetch('/api/transactions');
+    const data = await res.json();
+    setTxns(data || []);
+    setLoading(false);
+  };
+
+  const loadArchived = async () => {
+    const res = await fetch('/api/transactions/archived');
+    const data = await res.json();
+    setArchivedTxns(data || []);
+  };
+
+  const loadAccounts = async () => {
+    const res = await fetch('/api/balances');
+    const data = await res.json();
+    setAccounts(Array.isArray(data) ? data : []);
+  };
+
+  const loadManualAccounts = async () => {
+    const res = await fetch('/api/manual-accounts');
+    const data = await res.json();
+    setManualAccountsDb(Array.isArray(data) ? data : []);
+  };
+
+  const loadBudget = async () => {
+    const res = await fetch('/api/budget');
+    const data = await res.json();
+    const bills: Bill[] = data.bills || [];
+    const income: BudgetIncome[] = data.income || [];
+    setMaddieBills(bills.filter(b => b.account === 'maddie'));
+    setNickBills(bills.filter(b => b.account === 'joint'));
+    setMaddieIncome(income.filter(p => p.account === 'maddie'));
+cat > app/page.tsx << 'EOF'
+'use client';
+
+import { useEffect, useState } from 'react';
+import TransactionsTab from './components/TransactionsTab';
+import ArchiveTab from './components/ArchiveTab';
+import SpendingTab from './components/SpendingTab';
+import BalancesTab from './components/BalancesTab';
+import BudgetAccount from './components/BudgetAccount';
+import type { Txn, Account, ManualAccount, Bill, BudgetIncome } from './components/types';
+
+type Tab = 'transactions' | 'archive' | 'spending' | 'balances' | 'budget';
+
+export default function Page() {
+  const [tab, setTab] = useState<Tab>('transactions');
+  const [txns, setTxns] = useState<Txn[]>([]);
+  const [archivedTxns, setArchivedTxns] = useState<Txn[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [manualAccountsDb, setManualAccountsDb] = useState<ManualAccount[]>([]);
+  const [maddieBills, setMaddieBills] = useState<Bill[]>([]);
+  const [nickBills, setNickBills] = useState<Bill[]>([]);
+  const [maddieIncome, setMaddieIncome] = useState<BudgetIncome[]>([]);
+  const [nickIncome, setNickIncome] = useState<BudgetIncome[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadTxns = async () => {
+    setLoading(true);
+    const res = await fetch('/api/transactions');
+    const data = await res.json();
+    setTxns(data || []);
+    setLoading(false);
+  };
+
+  const loadArchived = async () => {
+    const res = await fetch('/api/transactions/archived');
+    const data = await res.json();
+    setArchivedTxns(data || []);
+  };
+
+  const loadAccounts = async () => {
+    const res = await fetch('/api/balances');
+    const data = await res.json();
+    setAccounts(Array.isArray(data) ? data : []);
+  };
+
+  const loadManualAccounts = async () => {
+    const res = await fetch('/api/manual-accounts');
+    const data = await res.json();
+    setManualAccountsDb(Array.isArray(data) ? data : []);
+  };
+
+  const loadBudget = async () => {
+    const res = await fetch('/api/budget');
+    const data = await res.json();
+    const bills: Bill[] = data.bills || [];
+    const income: BudgetIncome[] = data.income || [];
+    setMaddieBills(bills.filter(b => b.account === 'maddie'));
+    setNickBills(bills.filter(b => b.account === 'joint'));
+    setMaddieIncome(income.filter(p => p.account === 'maddie'));
+    setNickIncome(income.filter(p => p.account === 'joint'));
+  };
 
   useEffect(() => {
-    fetch('/api/transactions')
-      .then(res => res.json())
-      .then(data => {
-        setActiveTxns(data.filter((t: Txn) => !t.archived))
-        setArchivedTxns(data.filter((t: Txn) => t.archived))
-      })
-  }, [])
+    loadTxns();
+    loadArchived();
+    loadAccounts();
+    loadManualAccounts();
+    loadBudget();
+  }, []);
 
-  const isCompleteForArchive = (txn: Txn) => {
-    return (
-      ['Maddie', 'Joint'].includes(txn.label || '') &&
-      ['Needs', 'Wants', 'Impulse', 'Income'].includes(txn.category || '')
-    )
-  }
-
-  const updateField = async (id: string, field: keyof Txn, val: any) => {
-    const txn = activeTxns.find(t => t.id === id)
-    if (!txn) return
-
-    const updatedTxn: Txn = {
-      ...txn,
-      [field]: val,
-      ...(field === 'label' && val === 'Ignore' ? { category: null } : {}),
-    }
-
-    const shouldArchive =
-      updatedTxn.label === 'Ignore' || isCompleteForArchive(updatedTxn)
-
-    if (shouldArchive) {
-      setActiveTxns(prev => prev.filter(t => t.id !== id))
-      setArchivedTxns(prev => [{ ...updatedTxn, archived: true }, ...prev])
-    } else {
-      setActiveTxns(prev =>
-        prev.map(t => (t.id === id ? updatedTxn : t))
-      )
-    }
-
+  const updateField = async (id: string, field: string, val: any) => {
+    setTxns(prev => prev.map(t => t.id === id ? { ...t, [field]: val } : t));
     await fetch('/api/transactions/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, field, val }),
-    })
-
+    });
     if (field === 'label' && val === 'Ignore') {
+      setTxns(prev => prev.map(t => t.id === id ? { ...t, category: null } : t));
       await fetch('/api/transactions/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, field: 'category', val: null }),
-      })
+      });
     }
+  };
 
-    if (shouldArchive) {
-      await fetch('/api/transactions/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, field: 'archived', val: true }),
-      })
-    }
-  }
-
-  const recoverTxn = async (txn: Txn) => {
-    const recoveredTxn = { ...txn, archived: false }
-
-    setArchivedTxns(prev => prev.filter(t => t.id !== txn.id))
-    setActiveTxns(prev => [recoveredTxn, ...prev])
-
-    await fetch('/api/transactions/update', {
+  const archiveMonth = async (month: string, type: 'label' | 'category') => {
+    await fetch('/api/transactions/archive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: txn.id, field: 'archived', val: false }),
-    })
-  }
+      body: JSON.stringify({ month, type }),
+    });
+    await loadTxns();
+    await loadArchived();
+  };
 
-  const handleTouchEnd = (txn: Txn, endX: number) => {
-    if (touchStartX === null) return
+  const addManualTxn = async (txn: { date: string; merchant: string; amount: string; account: string }) => {
+    await fetch('/api/transactions/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(txn),
+    });
+    await loadTxns();
+  };
 
-    const distance = endX - touchStartX
+  const addManualAccount = async (name: string) => {
+    await fetch('/api/manual-accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'add', name }),
+    });
+    await loadManualAccounts();
+  };
 
-    if (distance > 80) {
-      recoverTxn(txn)
-    }
+  const updateManualBalance = async (id: number, balance: number) => {
+    const today = new Date().toISOString().split('T')[0];
+    await fetch('/api/manual-accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_balance', id, balance, balance_date: today }),
+    });
+    await loadManualAccounts();
+  };
 
-    setTouchStartX(null)
-  }
+  const budgetPost = async (body: any) => {
+    await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await loadBudget();
+  };
 
-  const renderTransaction = (txn: Txn, isArchived = false) => (
-    <div
-      key={txn.id}
-      className="border p-3 rounded bg-white"
-      onTouchStart={e => {
-        if (isArchived) {
-          setTouchStartX(e.touches[0].clientX)
-        }
-      }}
-      onTouchEnd={e => {
-        if (isArchived) {
-          handleTouchEnd(txn, e.changedTouches[0].clientX)
-        }
-      }}
-    >
-      <div className="font-medium">{txn.name}</div>
-      <div>${txn.amount}</div>
-      <div className="text-sm text-gray-500">{txn.date}</div>
-
-      {!isArchived && (
-        <div className="flex gap-2 mt-2">
-          <select
-            value={txn.label || ''}
-            onChange={e => updateField(txn.id, 'label', e.target.value)}
-          >
-            <option value="">Label</option>
-            <option value="Maddie">Maddie</option>
-            <option value="Joint">Joint</option>
-            <option value="Ignore">Ignore</option>
-          </select>
-
-          <select
-            value={txn.category || ''}
-            onChange={e => updateField(txn.id, 'category', e.target.value)}
-            disabled={txn.label === 'Ignore'}
-          >
-            <option value="">Category</option>
-            <option value="Needs">Needs</option>
-            <option value="Wants">Wants</option>
-            <option value="Impulse">Impulse</option>
-            <option value="Income">Income</option>
-          </select>
-        </div>
-      )}
-
-      {isArchived && (
-        <div className="mt-2 text-sm text-gray-500">
-          Swipe right to recover
-        </div>
-      )}
-    </div>
-  )
+  const tabStyle = (t: Tab) => ({
+    padding: '6px 12px',
+    borderRadius: 8,
+    border: 'none',
+    background: tab === t ? '#3A5068' : 'transparent',
+    color: tab === t ? 'white' : '#888',
+    fontSize: 13,
+    cursor: 'pointer',
+    fontWeight: tab === t ? 500 : 400,
+  });
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex gap-2">
-        <button
-          onClick={() => setTab('active')}
-          className={tab === 'active' ? 'font-bold' : ''}
-        >
-          Active
-        </button>
-
-        <button
-          onClick={() => setTab('archived')}
-          className={tab === 'archived' ? 'font-bold' : ''}
-        >
-          Archive
-        </button>
+    <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 80px' }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+        <button style={tabStyle('transactions')} onClick={() => setTab('transactions')}>Transactions</button>
+        <button style={tabStyle('archive')} onClick={() => setTab('archive')}>Archive</button>
+        <button style={tabStyle('spending')} onClick={() => setTab('spending')}>Spending</button>
+        <button style={tabStyle('balances')} onClick={() => setTab('balances')}>Balances</button>
+        <button style={tabStyle('budget')} onClick={() => setTab('budget')}>Budget</button>
       </div>
 
-      <div className="space-y-3">
-        {tab === 'active' &&
-          activeTxns.map(txn => renderTransaction(txn, false))}
+      {tab === 'transactions' && (
+        <TransactionsTab
+          txns={txns}
+          loading={loading}
+          manualAccountsDb={manualAccountsDb}
+          updateField={updateField}
+          archiveMonth={archiveMonth}
+          addManualTxn={addManualTxn}
+          addManualAccount={addManualAccount}
+        />
+      )}
 
-        {tab === 'archived' &&
-          archivedTxns.map(txn => renderTransaction(txn, true))}
-      </div>
+      {tab === 'archive' && (
+        <ArchiveTab
+          archivedTxns={archivedTxns}
+          updateField={async (id, field, val) => {
+            setArchivedTxns(prev => prev.map(t => t.id === id ? { ...t, [field]: val } : t));
+            await fetch('/api/transactions/update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id, field, val }),
+            });
+          }}
+        />
+      )}
+
+      {tab === 'spending' && (
+        <SpendingTab
+          allTxns={[...txns, ...archivedTxns]}
+          updateField={updateField}
+        />
+      )}
+
+      {tab === 'balances' && (
+        <BalancesTab
+          accounts={accounts}
+          manualAccountsDb={manualAccountsDb}
+          txns={txns}
+          archivedTxns={archivedTxns}
+          updateManualBalance={updateManualBalance}
+        />
+      )}
+
+      {tab === 'budget' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <BudgetAccount
+            title="Maddie"
+            bills={maddieBills}
+            income={maddieIncome}
+            onTogglePaid={(id: number) => budgetPost({ action: 'update', table: 'budget_bills', data: { id, fields: { paid: !maddieBills.find(b => b.id === id)?.paid } } })}
+            onUpdateAmount={(id: number, amount: string) => budgetPost({ action: 'update', table: 'budget_bills', data: { id, fields: { amount } } })}
+            onDeleteBill={(id: number) => budgetPost({ action: 'delete', table: 'budget_bills', data: { id } })}
+            onDeleteIncome={(id: number) => budgetPost({ action: 'delete', table: 'budget_income', data: { id } })}
+            onAddBill={(b: any) => budgetPost({ action: 'upsert', table: 'budget_bills', data: { ...b, account: 'maddie' } })}
+            onAddIncome={(p: any) => budgetPost({ action: 'upsert', table: 'budget_income', data: { ...p, account: 'maddie' } })}
+          />
+          <BudgetAccount
+            title="Joint"
+            bills={nickBills}
+            income={nickIncome}
+            onTogglePaid={(id: number) => budgetPost({ action: 'update', table: 'budget_bills', data: { id, fields: { paid: !nickBills.find(b => b.id === id)?.paid } } })}
+            onUpdateAmount={(id: number, amount: string) => budgetPost({ action: 'update', table: 'budget_bills', data: { id, fields: { amount } } })}
+            onDeleteBill={(id: number) => budgetPost({ action: 'delete', table: 'budget_bills', data: { id } })}
+            onDeleteIncome={(id: number) => budgetPost({ action: 'delete', table: 'budget_income', data: { id } })}
+            onAddBill={(b: any) => budgetPost({ action: 'upsert', table: 'budget_bills', data: { ...b, account: 'joint' } })}
+            onAddIncome={(p: any) => budgetPost({ action: 'upsert', table: 'budget_income', data: { ...p, account: 'joint' } })}
+          />
+        </div>
+      )}
     </div>
-  )
+  );
 }
