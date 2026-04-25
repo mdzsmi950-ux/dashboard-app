@@ -182,15 +182,21 @@ export default function App() {
 
   const updateField = async (id: string, field: string, val: any) => {
     const clearCategory = field === 'label' && (val === 'Ignore' || val === 'Nick');
-    setTxns(prev => prev.map(t => t.id === id ? { ...t, [field]: val, ...(clearCategory ? { category: null } : {}) } : t));
+    const autoArchive = field === 'label' && (val === 'Ignore' || val === 'Nick');
+    setTxns(prev => prev.map(t => t.id === id ? { ...t, [field]: val, ...(clearCategory ? { category: null } : {}), ...(autoArchive ? { label_archived: true } : {}) } : t));
     setArchivedTxns(prev => prev.map(t => t.id === id ? { ...t, [field]: val, ...(clearCategory ? { category: null } : {}) } : t));
     await fetch('/api/transactions/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, field, val }) });
     if (clearCategory) await fetch('/api/transactions/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, field: 'category', val: null }) });
+    if (autoArchive) await fetch('/api/transactions/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, field: 'label_archived', val: true }) });
   };
 
   const archiveMonth = async (month: string, type: 'label' | 'category') => {
     await fetch('/api/transactions/archive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ month, type }) });
-    fetchTxns(); fetchArchived();
+    if (type === 'label') {
+      setTxns(prev => prev.map(t => t.date.startsWith(month) ? { ...t, label_archived: true } : t));
+    } else {
+      setTxns(prev => prev.map(t => t.date.startsWith(month) ? { ...t, category_archived: true } : t));
+    }
   };
 
   const budgetApi = async (action: string, table: string, data: any) => {
