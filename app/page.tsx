@@ -137,17 +137,11 @@ export default function App() {
     } catch {}
   }, []);
 
-  const fetchTxns = async () => {
+  const fetchFromSupabase = async () => {
     setLoading(true);
     try { const d = await fetch("/api/transactions/saved").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setTxns(safe); localStorage.setItem("cache_txns", JSON.stringify(safe)); } catch {}
     setLoading(false);
   };
-  const fetchTxnsFromPlaid = async () => {
-    setLoading(true);
-    try { const d = await fetch("/api/transactions").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setTxns(safe); localStorage.setItem("cache_txns", JSON.stringify(safe)); } catch {}
-    setLoading(false);
-  };
-
   const fetchAccounts = async () => {
     try { const d = await fetch("/api/balances").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setAccounts(safe); localStorage.setItem("cache_accounts", JSON.stringify(safe)); } catch {}
   };
@@ -161,11 +155,21 @@ export default function App() {
     try { const d = await fetch("/api/transactions/archived").then(r => r.json()); const safe = Array.isArray(d) ? d : []; setArchivedTxns(safe); localStorage.setItem("cache_archived", JSON.stringify(safe)); } catch {}
   }, []);
 
-  const refreshAll = useCallback(async () => {
-    await Promise.all([fetchTxnsFromPlaid(), fetchAccounts(), fetchArchived(), fetchManualAccounts()]);
-  }, [fetchArchived]);
-
-  useEffect(() => { fetchBudget(); fetchArchived(); fetchAccounts(); fetchManualAccounts(); fetchTxns(); }, [fetchBudget, fetchArchived]);
+  useEffect(() => {
+    const init = async () => {
+      const lastSync = localStorage.getItem('last_plaid_sync');
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (lastSync !== todayStr) {
+        setLoading(true);
+        try { await fetch("/api/transactions"); } catch {}
+        try { await fetchAccounts(); } catch {}
+        localStorage.setItem('last_plaid_sync', todayStr);
+        setLoading(false);
+      }
+      await Promise.all([fetchFromSupabase(), fetchArchived(), fetchManualAccounts(), fetchBudget()]);
+    };
+    init();
+  }, [fetchBudget, fetchArchived]);
 
   const connectBank = async () => {
     const { link_token } = await fetch('/api/create-link-token', { method: 'POST' }).then(r => r.json());
@@ -173,7 +177,7 @@ export default function App() {
       token: link_token,
       onSuccess: async (public_token: string) => {
         await fetch('/api/exchange-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ public_token }) });
-        setLinked(true); refreshAll();
+        setLinked(true); fetchFromSupabase(); fetchArchived();
       },
     });
     handler.open();
@@ -327,7 +331,7 @@ export default function App() {
               <div style={{ padding: '0 20px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
-                  <button onClick={() => refreshAll()} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Refresh</button>
+
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', minWidth: 0 }}>
@@ -497,25 +501,16 @@ export default function App() {
           )}
 
           {tab === 'archive' && (
-            <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
+            <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden', width: '100%' }}>
               <div style={{ padding: '0 20px', marginBottom: 16 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>Archive</div>
                 <input placeholder="Search transactions..." value={archiveSearch} onChange={e => setArchiveSearch(e.target.value)}
                   style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #e0e0e0', borderRadius: 10, background: '#f8f8f8', boxSizing: 'border-box' as const }} />
               </div>
               {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>No archived transactions.</div>}
-              {(() => {
-                const byMonth: Record<string, Txn[]> = {};
-                filteredArchive.forEach(t => { const m = t.date.slice(0, 7); if (!byMonth[m]) byMonth[m] = []; byMonth[m].push(t); });
-                return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0])).map(([month, mTxns]) => (
-                  <div key={month}>
-                    <div style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, color: '#555' }}>{monthLabel(month)}</div>
-                    <div style={{ padding: '0 20px' }}>
-                      {mTxns.map(t => <ArchiveCard key={t.id} t={t} onRecover={recoverTxn} />)}
-                    </div>
-                  </div>
-                ));
-              })()}
+              <div style={{ padding: '0 20px' }}>
+                {filteredArchive.map(t => <ArchiveCard key={t.id} t={t} onRecover={recoverTxn} />)}
+              </div>
             </div>
           )}
 
