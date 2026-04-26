@@ -115,6 +115,91 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
   );
 }
 
+function SpendingChart({ data }: { data: any }) {
+  const W = 335, H = 180, PAD = { top: 10, right: 10, bottom: 24, left: 44 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+
+  const allVals = [...data.current, ...data.last].filter(v => v > 0);
+  const maxVal = allVals.length ? Math.max(...allVals) * 1.1 : 100;
+  const maxDays = Math.max(data.daysInCur, data.daysInLast);
+
+  const toX = (day: number, totalDays: number) => PAD.left + ((day - 1) / (totalDays - 1)) * chartW;
+  const toY = (val: number) => PAD.top + chartH - (val / maxVal) * chartH;
+
+  const makePath = (vals: number[], totalDays: number, limit?: number) => {
+    const pts = vals.slice(0, limit || vals.length);
+    if (!pts.length) return '';
+    return pts.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i + 1, totalDays).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+  };
+
+  const makeArea = (vals: number[], totalDays: number, limit?: number) => {
+    const path = makePath(vals, totalDays, limit);
+    if (!path) return '';
+    const pts = vals.slice(0, limit || vals.length);
+    const lastX = toX(pts.length, totalDays).toFixed(1);
+    const baseY = (PAD.top + chartH).toFixed(1);
+    return `${path} L${lastX},${baseY} L${toX(1, totalDays).toFixed(1)},${baseY} Z`;
+  };
+
+  const curPath = makePath(data.current, data.daysInCur, data.todayDay);
+  const lastPath = makePath(data.last, data.daysInLast);
+  const curArea = makeArea(data.current, data.daysInCur, data.todayDay);
+  const lastArea = makeArea(data.last, data.daysInLast);
+
+  const todayX = data.current.length >= data.todayDay ? toX(data.todayDay, data.daysInCur) : null;
+  const todayY = data.current.length >= data.todayDay ? toY(data.current[data.todayDay - 1]) : null;
+
+  // Y axis labels
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(p => ({ val: maxVal * p, y: toY(maxVal * p) }));
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="curGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1a1a1a" stopOpacity="0.12"/>
+          <stop offset="100%" stopColor="#1a1a1a" stopOpacity="0"/>
+        </linearGradient>
+        <linearGradient id="lastGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ccc" stopOpacity="0.15"/>
+          <stop offset="100%" stopColor="#ccc" stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+
+      {/* Y grid lines */}
+      {yTicks.map(({ val, y }) => (
+        <g key={val}>
+          <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#f0f0f0" strokeWidth="0.5"/>
+          <text x={PAD.left - 6} y={y + 4} textAnchor="end" fontSize="9" fill="#bbb">
+            {val === 0 ? '$0' : val >= 1000 ? `$${(val/1000).toFixed(1)}k` : `$${Math.round(val)}`}
+          </text>
+        </g>
+      ))}
+
+      {/* Last month area + line */}
+      {lastArea && <path d={lastArea} fill="url(#lastGrad)"/>}
+      {lastPath && <path d={lastPath} fill="none" stroke="#ccc" strokeWidth="1.5" strokeLinejoin="round"/>}
+
+      {/* Current month area + line */}
+      {curArea && <path d={curArea} fill="url(#curGrad)"/>}
+      {curPath && <path d={curPath} fill="none" stroke="#1a1a1a" strokeWidth="2" strokeLinejoin="round"/>}
+
+      {/* Today dot */}
+      {todayX !== null && todayY !== null && (
+        <>
+          <circle cx={todayX} cy={todayY} r="4" fill="#1a1a1a"/>
+          <circle cx={todayX} cy={todayY} r="7" fill="none" stroke="#1a1a1a" strokeWidth="1" opacity="0.3"/>
+        </>
+      )}
+
+      {/* X axis day labels */}
+      {[1, 8, 15, 22, data.daysInCur].map(d => (
+        <text key={d} x={toX(d, data.daysInCur)} y={H - 4} textAnchor="middle" fontSize="9" fill="#bbb">{d}</text>
+      ))}
+    </svg>
+  );
+}
+
 export default function App() {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [archivedTxns, setArchivedTxns] = useState<Txn[]>([]);
@@ -280,6 +365,42 @@ export default function App() {
     });
   }, [archivedTxns, archiveSearch, archiveSort]);
 
+  // Chart: cumulative daily spending for current and last month
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const curMonth = now.toISOString().slice(0, 7);
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonth = lastMonthDate.toISOString().slice(0, 7);
+    const todayDay = now.getDate();
+    const daysInCur = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysInLast = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0).getDate();
+
+    const curTxns = allTxns.filter(t => t.date.startsWith(curMonth));
+    const lastTxns = allTxns.filter(t => t.date.startsWith(lastMonth));
+
+    const buildCumulative = (txns: Txn[], days: number) => {
+      const daily: number[] = Array(days + 1).fill(0);
+      txns.forEach(t => {
+        const day = parseInt(t.date.slice(8, 10));
+        daily[day] += myShare(t);
+      });
+      const cumulative: number[] = [];
+      let sum = 0;
+      for (let d = 1; d <= days; d++) { sum += daily[d]; cumulative.push(sum); }
+      return cumulative;
+    };
+
+    return {
+      current: buildCumulative(curTxns, daysInCur),
+      last: buildCumulative(lastTxns, daysInLast),
+      todayDay,
+      daysInCur,
+      daysInLast,
+      curMonth,
+      lastMonth,
+    };
+  }, [allTxns]);
+
   const maddieBills  = bills.filter(b => b.account === 'maddie');
   const maddieIncome = income.filter(p => p.account === 'maddie');
   const jointBills   = bills.filter(b => b.account === 'joint');
@@ -377,7 +498,34 @@ export default function App() {
 
           {tab === 'summary' && (
             <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden' }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 20 }}>Summary</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>Summary</div>
+
+              {/* Spending chart */}
+              <div style={{ marginBottom: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 2 }}>{monthLabel(chartData.curMonth)} spending</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: '#1a1a1a' }}>{fmt(chartData.current[chartData.todayDay - 1] || 0)}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 2 }}>{monthLabel(chartData.lastMonth)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#bbb' }}>{fmt(chartData.last[chartData.last.length - 1] || 0)}</div>
+                  </div>
+                </div>
+                <SpendingChart data={chartData} />
+                <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={{ width: 16, height: 2, background: '#1a1a1a', borderRadius: 1 }}/>
+                    <span style={{ fontSize: 10, color: '#888' }}>This month</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={{ width: 16, height: 2, background: '#ccc', borderRadius: 1 }}/>
+                    <span style={{ fontSize: 10, color: '#888' }}>Last month</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 16, marginBottom: 16 }}/>
               <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Year to Date</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                 <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Spending</div><div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>{fmt(ytdStats.total)}</div></div>
