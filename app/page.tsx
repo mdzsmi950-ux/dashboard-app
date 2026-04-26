@@ -69,7 +69,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
       {/* Swipe-to-ignore background */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: ready ? '#888' : '#bbb',
+        background: ready ? '#999' : '#ccc',
         display: 'flex', alignItems: 'center', paddingLeft: 20,
         opacity: swiping ? 1 : 0, transition: 'background 0.15s',
       }}>
@@ -91,7 +91,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
             <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
             <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a', flexShrink: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#1A7A74' : '#1a1a1a', flexShrink: 0 }}>
             {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
           </div>
         </div>
@@ -149,7 +149,7 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
             </div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? '#1A7A74' : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
             <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}</div>
           </div>
         </div>
@@ -164,9 +164,9 @@ function PieChart({ needs, wants, impulse }: { needs: number; wants: number; imp
 
   const cx = 80, cy = 80, r = 70;
   const slices = [
-    { value: needs,   color: '#685240', label: 'Needs' },
-    { value: wants,   color: '#506840', label: 'Wants' },
-    { value: impulse, color: '#683A52', label: 'Impulse' },
+    { value: needs,   color: '#1A7A74', label: 'Needs' },
+    { value: wants,   color: '#C05A3A', label: 'Wants' },
+    { value: impulse, color: '#AD1457', label: 'Impulse' },
   ].filter(s => s.value > 0);
 
   let angle = -Math.PI / 2;
@@ -244,12 +244,12 @@ function SpendingChart({ data }: { data: any }) {
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
       <defs>
         <linearGradient id="curGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a1a1a" stopOpacity="0.12"/>
-          <stop offset="100%" stopColor="#1a1a1a" stopOpacity="0"/>
+          <stop offset="0%" stopColor="#81D8D0" stopOpacity="0.2"/>
+          <stop offset="100%" stopColor="#81D8D0" stopOpacity="0"/>
         </linearGradient>
         <linearGradient id="lastGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ccc" stopOpacity="0.15"/>
-          <stop offset="100%" stopColor="#ccc" stopOpacity="0"/>
+          <stop offset="0%" stopColor="#FFAA94" stopOpacity="0.2"/>
+          <stop offset="100%" stopColor="#FFAA94" stopOpacity="0"/>
         </linearGradient>
       </defs>
 
@@ -265,17 +265,17 @@ function SpendingChart({ data }: { data: any }) {
 
       {/* Last month area + line */}
       {lastArea && <path d={lastArea} fill="url(#lastGrad)"/>}
-      {lastPath && <path d={lastPath} fill="none" stroke="#ccc" strokeWidth="1.5" strokeLinejoin="round"/>}
+      {lastPath && <path d={lastPath} fill="none" stroke="#FFAA94" strokeWidth="1.5" strokeLinejoin="round"/>}
 
       {/* Current month area + line */}
       {curArea && <path d={curArea} fill="url(#curGrad)"/>}
-      {curPath && <path d={curPath} fill="none" stroke="#1a1a1a" strokeWidth="2" strokeLinejoin="round"/>}
+      {curPath && <path d={curPath} fill="none" stroke="#81D8D0" strokeWidth="2" strokeLinejoin="round"/>}
 
       {/* Today dot */}
       {todayX !== null && todayY !== null && (
         <>
-          <circle cx={todayX} cy={todayY} r="4" fill="#1a1a1a"/>
-          <circle cx={todayX} cy={todayY} r="7" fill="none" stroke="#1a1a1a" strokeWidth="1" opacity="0.3"/>
+          <circle cx={todayX} cy={todayY} r="4" fill="#81D8D0"/>
+          <circle cx={todayX} cy={todayY} r="7" fill="none" stroke="#81D8D0" strokeWidth="1" opacity="0.3"/>
         </>
       )}
 
@@ -508,7 +508,7 @@ export default function App() {
                   <div>
                     <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
                     {txns.filter(t => !t.label).length > 0 && (
-                      <div style={{ fontSize: 12, color: '#E07A3A', marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: '#C05A3A', marginTop: 2 }}>
                         {txns.filter(t => !t.label).length} to review
                       </div>
                     )}
@@ -615,11 +615,11 @@ export default function App() {
                 <SpendingChart data={chartData} />
                 <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <div style={{ width: 16, height: 2, background: '#1a1a1a', borderRadius: 1 }}/>
+                    <div style={{ width: 16, height: 2, background: '#81D8D0', borderRadius: 1 }}/>
                     <span style={{ fontSize: 10, color: '#888' }}>This month</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <div style={{ width: 16, height: 2, background: '#ccc', borderRadius: 1 }}/>
+                    <div style={{ width: 16, height: 2, background: '#FFAA94', borderRadius: 1 }}/>
                     <span style={{ fontSize: 10, color: '#888' }}>Last month</span>
                   </div>
                 </div>
@@ -629,7 +629,7 @@ export default function App() {
               <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Year to Date</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                 <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Spending</div><div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>{fmt(ytdStats.total)}</div></div>
-                <div><div style={{ fontSize: 10, color: '#2A6030', marginBottom: 4 }}>Income</div><div style={{ fontSize: 22, fontWeight: 700, color: '#2A6030' }}>{fmt(ytdStats.income)}</div></div>
+                <div><div style={{ fontSize: 10, color: '#2E7D32', marginBottom: 4 }}>Income</div><div style={{ fontSize: 22, fontWeight: 700, color: '#2E7D32' }}>{fmt(ytdStats.income)}</div></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 28 }}>
                 {(['Needs', 'Wants', 'Impulse'] as Category[]).map(cat => (
@@ -654,7 +654,7 @@ export default function App() {
                 {selectedMonth && (
                   <div>
                     {[
-                      { label: 'Income',   value: monthlyStats.income,  color: '#2A6030' },
+                      { label: 'Income',   value: monthlyStats.income,  color: '#2E7D32' },
                       { label: 'Spending', value: monthlyStats.total,   color: '#1a1a1a' },
                       { label: 'Needs',    value: monthlyStats.needs,   color: catColors['Needs'].color },
                       { label: 'Wants',    value: monthlyStats.wants,   color: catColors['Wants'].color },
