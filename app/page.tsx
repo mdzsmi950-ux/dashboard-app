@@ -61,12 +61,15 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
           <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
           <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
         </div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a', flexShrink: 0 }}>
-          {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a' }}>
+            {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
+          </div>
+          <button onClick={(e) => { e.preventDefault(); updateField(t.id, 'label', 'Ignore'); }} style={pill(t.label === 'Ignore', labelColors['Ignore'])}>Ignore</button>
         </div>
       </div>
       <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-        {(['Mine', 'Joint', 'Ignore'] as Label[]).map(l => (
+        {(['Mine', 'Joint'] as Label[]).map(l => (
           <button key={l} onClick={(e) => { e.preventDefault(); updateField(t.id, 'label', l); }} style={pill(t.label === l, labelColors[l])}>{l}</button>
         ))}
       </div>
@@ -82,29 +85,49 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
 
 function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) {
   const startX = useRef<number | null>(null);
+  const [swipeX, setSwipeX] = useState(0);
+  const threshold = 80;
+  const swiping = swipeX > 10;
+  const ready = swipeX >= threshold;
+
   return (
-    <div
-      style={{ padding: '12px 0', borderBottom: '0.5px solid #f0f0f0' }}
-      onTouchStart={e => { startX.current = e.touches[0].clientX; }}
-      onTouchEnd={e => {
-        if (startX.current !== null && e.changedTouches[0].clientX - startX.current > 80) {
-          onRecover(t);
-        }
-        startX.current = null;
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
-          <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-            {t.label && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: labelColors[t.label].bg, color: labelColors[t.label].color }}>{t.label}</span>}
-            {t.category && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: catColors[t.category].bg, color: catColors[t.category].color }}>{t.category}</span>}
+    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '0.5px solid #f0f0f0' }}>
+      {/* Red recover background */}
+      <div style={{
+        position: 'absolute', inset: 0, background: ready ? '#c0392b' : '#e88',
+        display: 'flex', alignItems: 'center', paddingLeft: 20,
+        opacity: swiping ? 1 : 0, transition: 'background 0.15s',
+      }}>
+        <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>↩ Recover</span>
+      </div>
+      <div
+        style={{ padding: '12px 0', background: '#fff', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
+        onTouchStart={e => { startX.current = e.touches[0].clientX; setSwipeX(0); }}
+        onTouchMove={e => {
+          if (startX.current === null) return;
+          const dx = e.touches[0].clientX - startX.current;
+          if (dx > 0) setSwipeX(dx);
+        }}
+        onTouchEnd={e => {
+          if (startX.current !== null && e.changedTouches[0].clientX - startX.current >= threshold) {
+            onRecover(t);
+          }
+          setSwipeX(0);
+          startX.current = null;
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
+            <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+              {t.label && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: labelColors[t.label].bg, color: labelColors[t.label].color }}>{t.label}</span>}
+              {t.category && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: catColors[t.category].bg, color: catColors[t.category].color }}>{t.category}</span>}
+            </div>
           </div>
-          <div style={{ fontSize: 10, color: '#ccc', marginTop: 4 }}>Swipe right to recover</div>
-        </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
-          <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}</div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
+            <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}</div>
+          </div>
         </div>
       </div>
     </div>
