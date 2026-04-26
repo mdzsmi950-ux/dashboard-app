@@ -498,7 +498,7 @@ export default function App() {
   return (
     <>
       <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async />
-      <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: theme.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: theme.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', overflow: 'hidden' }}>
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: 16 }}>
 
           {tab === 'transactions' && (
@@ -712,9 +712,9 @@ export default function App() {
         <div style={{
           background: theme.bg,
           borderTop: `0.5px solid ${theme.divider}`,
-          paddingBottom: 'env(safe-area-inset-bottom)',
           display: 'flex', justifyContent: 'space-evenly', alignItems: 'center',
-          height: TAB_H, flexShrink: 0,
+          flexShrink: 0, minHeight: TAB_H,
+          paddingBottom: 'env(safe-area-inset-bottom)',
         }}>
           {TABS.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setTab(id)} style={{
