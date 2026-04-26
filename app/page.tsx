@@ -65,18 +65,18 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
   } as const);
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '0.5px solid #f0f0f0' }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '0.5px solid #EAE4DC' }}>
       {/* Swipe-to-ignore background */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: ready ? '#999' : '#ccc',
+        background: ready ? '#8C8279' : '#B0A49A',
         display: 'flex', alignItems: 'center', paddingLeft: 20,
         opacity: swiping ? 1 : 0, transition: 'background 0.15s',
       }}>
         <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>Ignore</span>
       </div>
       <div
-        style={{ padding: '12px 0', background: '#fff', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
+        style={{ padding: '12px 0', background: '#FAF7F2', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
         onTouchStart={e => { startX.current = e.touches[0].clientX; setSwipeX(0); }}
         onTouchMove={e => { if (startX.current === null) return; const dx = e.touches[0].clientX - startX.current; if (dx > 0) setSwipeX(dx); }}
         onTouchEnd={e => {
@@ -88,10 +88,10 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
           <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
-            <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#3A3530', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
+            <div style={{ fontSize: 11, color: '#9C8E82', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#1A7A74' : '#1a1a1a', flexShrink: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#2A8A8A' : '#1a1a1a', flexShrink: 0 }}>
             {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
           </div>
         </div>
@@ -123,16 +123,16 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
   const ready = swipeX >= threshold;
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '0.5px solid #f0f0f0' }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '0.5px solid #EAE4DC' }}>
       <div style={{
-        position: 'absolute', inset: 0, background: ready ? '#c0392b' : '#e88',
+        position: 'absolute', inset: 0, background: ready ? '#C04830' : '#E8654A',
         display: 'flex', alignItems: 'center', paddingLeft: 20,
         opacity: swiping ? 1 : 0, transition: 'background 0.15s',
       }}>
         <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>↩ Recover</span>
       </div>
       <div
-        style={{ padding: '12px 0', background: '#fff', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
+        style={{ padding: '12px 0', background: '#FAF7F2', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
         onTouchStart={e => { startX.current = e.touches[0].clientX; setSwipeX(0); }}
         onTouchMove={e => { if (startX.current === null) return; const dx = e.touches[0].clientX - startX.current; if (dx > 0) setSwipeX(dx); }}
         onTouchEnd={e => {
@@ -142,15 +142,15 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#3A3530', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
             <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
               {t.label && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: labelColors[t.label].bg, color: labelColors[t.label].color }}>{t.label}</span>}
               {t.category && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: catColors[t.category].bg, color: catColors[t.category].color }}>{t.category}</span>}
             </div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? '#1A7A74' : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
-            <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? '#2A8A8A' : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
+            <div style={{ fontSize: 11, color: '#9C8E82', marginTop: 2 }}>{t.date.slice(5)}</div>
           </div>
         </div>
       </div>
@@ -164,9 +164,9 @@ function PieChart({ needs, wants, impulse }: { needs: number; wants: number; imp
 
   const cx = 80, cy = 80, r = 70;
   const slices = [
-    { value: needs,   color: '#1A7A74', label: 'Needs' },
-    { value: wants,   color: '#C05A3A', label: 'Wants' },
-    { value: impulse, color: '#AD1457', label: 'Impulse' },
+    { value: needs,   color: '#2A8A8A', label: 'Needs' },
+    { value: wants,   color: '#7B6EA6', label: 'Wants' },
+    { value: impulse, color: '#E8654A', label: 'Impulse' },
   ].filter(s => s.value > 0);
 
   let angle = -Math.PI / 2;
@@ -192,8 +192,8 @@ function PieChart({ needs, wants, impulse }: { needs: number; wants: number; imp
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 10, height: 10, borderRadius: 3, background: p.color, flexShrink: 0 }}/>
             <div>
-              <div style={{ fontSize: 12, color: '#555', fontWeight: 500 }}>{p.label}</div>
-              <div style={{ fontSize: 11, color: '#aaa' }}>{p.pct}% · ${p.value.toFixed(0)}</div>
+              <div style={{ fontSize: 12, color: '#5C504A', fontWeight: 500 }}>{p.label}</div>
+              <div style={{ fontSize: 11, color: '#9C8E82' }}>{p.pct}% · ${p.value.toFixed(0)}</div>
             </div>
           </div>
         ))}
@@ -244,12 +244,12 @@ function SpendingChart({ data }: { data: any }) {
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
       <defs>
         <linearGradient id="curGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#81D8D0" stopOpacity="0.2"/>
-          <stop offset="100%" stopColor="#81D8D0" stopOpacity="0"/>
+          <stop offset="0%" stopColor="#4ABFBF" stopOpacity="0.2"/>
+          <stop offset="100%" stopColor="#4ABFBF" stopOpacity="0"/>
         </linearGradient>
         <linearGradient id="lastGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFAA94" stopOpacity="0.2"/>
-          <stop offset="100%" stopColor="#FFAA94" stopOpacity="0"/>
+          <stop offset="0%" stopColor="#E8654A" stopOpacity="0.2"/>
+          <stop offset="100%" stopColor="#E8654A" stopOpacity="0"/>
         </linearGradient>
       </defs>
 
@@ -265,17 +265,17 @@ function SpendingChart({ data }: { data: any }) {
 
       {/* Last month area + line */}
       {lastArea && <path d={lastArea} fill="url(#lastGrad)"/>}
-      {lastPath && <path d={lastPath} fill="none" stroke="#FFAA94" strokeWidth="1.5" strokeLinejoin="round"/>}
+      {lastPath && <path d={lastPath} fill="none" stroke="#E8654A" strokeWidth="1.5" strokeLinejoin="round"/>}
 
       {/* Current month area + line */}
       {curArea && <path d={curArea} fill="url(#curGrad)"/>}
-      {curPath && <path d={curPath} fill="none" stroke="#81D8D0" strokeWidth="2" strokeLinejoin="round"/>}
+      {curPath && <path d={curPath} fill="none" stroke="#4ABFBF" strokeWidth="2" strokeLinejoin="round"/>}
 
       {/* Today dot */}
       {todayX !== null && todayY !== null && (
         <>
-          <circle cx={todayX} cy={todayY} r="4" fill="#81D8D0"/>
-          <circle cx={todayX} cy={todayY} r="7" fill="none" stroke="#81D8D0" strokeWidth="1" opacity="0.3"/>
+          <circle cx={todayX} cy={todayY} r="4" fill="#4ABFBF"/>
+          <circle cx={todayX} cy={todayY} r="7" fill="none" stroke="#4ABFBF" strokeWidth="1" opacity="0.3"/>
         </>
       )}
 
@@ -498,7 +498,7 @@ export default function App() {
   return (
     <>
       <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async />
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#fff', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', overflowX: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#FAF7F2', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', overflowX: 'hidden' }}>
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
 
           {tab === 'transactions' && (
@@ -506,20 +506,20 @@ export default function App() {
               <div style={{ padding: '0 20px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: '#3A3530' }}>Transactions</div>
                     {txns.filter(t => !t.label).length > 0 && (
-                      <div style={{ fontSize: 12, color: '#C05A3A', marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: '#E8654A', marginTop: 2 }}>
                         {txns.filter(t => !t.label).length} to review
                       </div>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => setShowArchive(true)} style={{ padding: '7px 10px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                    <button onClick={() => setShowArchive(true)} style={{ padding: '7px 10px', borderRadius: 20, border: '0.5px solid #D4C9BC', background: '#FAF7F2', color: '#5C504A', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                         <rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8"/><line x1="10" y1="13" x2="14" y2="13"/>
                       </svg>
                     </button>
-                    <label style={{ padding: '7px 10px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                    <label style={{ padding: '7px 10px', borderRadius: 20, border: '0.5px solid #D4C9BC', background: '#FAF7F2', color: '#5C504A', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                       </svg>
@@ -535,35 +535,35 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', minWidth: 0 }}>
+                  <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #D4C9BC', borderRadius: 8, background: '#F0EBE3', minWidth: 0 }}>
                     <option value="All">All accounts</option>
                     {accountOptions.map(a => <option key={a} value={a}>{a}</option>)}
                   </select>
-                  <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', minWidth: 0 }}>
+                  <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #D4C9BC', borderRadius: 8, background: '#F0EBE3', minWidth: 0 }}>
                     <option value="All">All months</option>
                     {Array.from(new Set(txns.map(t => t.date.slice(0, 7)))).sort((a, b) => b.localeCompare(a)).map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
-                  <select value={txnSort} onChange={e => setTxnSort(e.target.value as any)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', minWidth: 0 }}>
+                  <select value={txnSort} onChange={e => setTxnSort(e.target.value as any)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #D4C9BC', borderRadius: 8, background: '#F0EBE3', minWidth: 0 }}>
                     <option value="date">Date</option>
                     <option value="amount">Amount</option>
                     <option value="merchant">Merchant</option>
                   </select>
                 </div>
               </div>
-              {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>Loading…</div>}
+              {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#9C8E82', fontSize: 13 }}>Loading…</div>}
               {!loading && txns.length === 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 20px', color: '#aaa' }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 20px', color: '#9C8E82' }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4ABFBF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}>
                     <circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/>
                   </svg>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#555' }}>All sorted out!</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#5C504A' }}>All sorted out!</div>
                 </div>
               )}
               {!loading && txnsByMonth.map(([month, mTxns]) => (
                 <div key={month} style={{ marginBottom: 8 }}>
                   <div style={{ padding: '8px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>{monthLabel(month)}</div>
-                    <span style={{ fontSize: 12, color: '#aaa' }}>{fmt(mTxns.reduce((s, t) => s + myShare(t), 0))}</span>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#5C504A' }}>{monthLabel(month)}</div>
+                    <span style={{ fontSize: 12, color: '#9C8E82' }}>{fmt(mTxns.reduce((s, t) => s + myShare(t), 0))}</span>
                   </div>
                   <div style={{ padding: '0 20px' }}>
                     {mTxns.map(t => <TxnCard key={t.id} t={t} updateField={updateField} />)}
@@ -576,12 +576,12 @@ export default function App() {
           {tab === 'budget' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ padding: '0 20px', marginBottom: 16 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>Budget</div>
-                <div style={{ display: 'flex', background: '#f5f5f5', borderRadius: 10, padding: 3 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#3A3530', marginBottom: 16 }}>Budget</div>
+                <div style={{ display: 'flex', background: '#F0EBE3', borderRadius: 10, padding: 3 }}>
                   {(['maddie', 'joint'] as const).map(sub => (
                     <button key={sub} onClick={() => setBudgetSubtab(sub)} style={{
                       flex: 1, padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13,
-                      background: budgetSubtab === sub ? 'white' : 'transparent',
+                      background: budgetSubtab === sub ? '#FAF7F2' : 'transparent',
                       color: budgetSubtab === sub ? '#1a1a1a' : '#888',
                       fontWeight: budgetSubtab === sub ? 600 : 400,
                       boxShadow: budgetSubtab === sub ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
@@ -598,96 +598,74 @@ export default function App() {
 
           {tab === 'summary' && (
             <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden' }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>Summary</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#3A3530', marginBottom: 20 }}>Summary</div>
 
-              {/* Spending chart */}
-              <div style={{ marginBottom: 6 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 2 }}>{monthLabel(chartData.curMonth)} spending</div>
-                    <div style={{ fontSize: 26, fontWeight: 700, color: '#1a1a1a' }}>{fmt(chartData.current[chartData.todayDay - 1] || 0)}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: '#aaa', marginBottom: 2 }}>{monthLabel(chartData.lastMonth)}</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#bbb' }}>{fmt(chartData.last[chartData.last.length - 1] || 0)}</div>
-                  </div>
+              {/* 1. YTD Income + Spending */}
+              <div style={{ fontSize: 10, color: '#9C8E82', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Year to Date</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: '#3A7A3A', marginBottom: 4 }}>Income</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#3A7A3A' }}>{fmt(ytdStats.income)}</div>
                 </div>
-                <SpendingChart data={chartData} />
-                <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <div style={{ width: 16, height: 2, background: '#81D8D0', borderRadius: 1 }}/>
-                    <span style={{ fontSize: 10, color: '#888' }}>This month</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <div style={{ width: 16, height: 2, background: '#FFAA94', borderRadius: 1 }}/>
-                    <span style={{ fontSize: 10, color: '#888' }}>Last month</span>
-                  </div>
+                <div>
+                  <div style={{ fontSize: 10, color: '#9C8E82', marginBottom: 4 }}>Spending</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#3A3530' }}>{fmt(ytdStats.total)}</div>
                 </div>
               </div>
 
-              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 16, marginBottom: 16 }}/>
-              <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Year to Date</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                <div><div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Spending</div><div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>{fmt(ytdStats.total)}</div></div>
-                <div><div style={{ fontSize: 10, color: '#2E7D32', marginBottom: 4 }}>Income</div><div style={{ fontSize: 22, fontWeight: 700, color: '#2E7D32' }}>{fmt(ytdStats.income)}</div></div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 28 }}>
-                {(['Needs', 'Wants', 'Impulse'] as Category[]).map(cat => (
-                  <div key={cat}>
-                    <div style={{ fontSize: 10, color: catColors[cat].color, marginBottom: 4 }}>{cat}</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: catColors[cat].color }}>
-                      {fmt(cat === 'Needs' ? ytdStats.needs : cat === 'Wants' ? ytdStats.wants : ytdStats.impulse)}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* 2. YTD Pie chart */}
               <PieChart needs={ytdStats.needs} wants={ytdStats.wants} impulse={ytdStats.impulse} />
 
-              <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly Breakdown</div>
-                  <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ fontSize: 13, padding: '6px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: 'white', color: '#1a1a1a' }}>
-                    <option value="">Select month</option>
+              {/* 3 + 4. Monthly breakdown + chart */}
+              <div style={{ borderTop: '0.5px solid #EAE4DC', paddingTop: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div style={{ fontSize: 10, color: '#9C8E82', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly</div>
+                  <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ fontSize: 13, padding: '6px 10px', border: '0.5px solid #D4C9BC', borderRadius: 8, background: '#FAF7F2', color: '#3A3530' }}>
                     {availableMonths.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
                 </div>
-                {selectedMonth && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
                   <div>
-                    {[
-                      { label: 'Income',   value: monthlyStats.income,  color: '#2E7D32' },
-                      { label: 'Spending', value: monthlyStats.total,   color: '#1a1a1a' },
-                      { label: 'Needs',    value: monthlyStats.needs,   color: catColors['Needs'].color },
-                      { label: 'Wants',    value: monthlyStats.wants,   color: catColors['Wants'].color },
-                      { label: 'Impulse',  value: monthlyStats.impulse, color: catColors['Impulse'].color },
-                    ].map(row => (
-                      <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '0.5px solid #f0f0f0' }}>
-                        <span style={{ fontSize: 14, color: '#888' }}>{row.label}</span>
-                        <span style={{ fontSize: 16, fontWeight: 600, color: row.color }}>{fmt(row.value)}</span>
-                      </div>
-                    ))}
+                    <div style={{ fontSize: 10, color: '#3A7A3A', marginBottom: 4 }}>Income</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: '#3A7A3A' }}>{fmt(monthlyStats.income)}</div>
                   </div>
-                )}
+                  <div>
+                    <div style={{ fontSize: 10, color: '#9C8E82', marginBottom: 4 }}>Spending</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: '#3A3530' }}>{fmt(monthlyStats.total)}</div>
+                  </div>
+                </div>
+                <SpendingChart data={chartData} />
+                <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={{ width: 16, height: 2, background: '#4ABFBF', borderRadius: 1 }}/>
+                    <span style={{ fontSize: 10, color: '#8C8279' }}>{monthLabel(chartData.curMonth)}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={{ width: 16, height: 2, background: '#E8654A', borderRadius: 1 }}/>
+                    <span style={{ fontSize: 10, color: '#8C8279' }}>{monthLabel(chartData.lastMonth)}</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {showArchive && (
-            <div style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 150, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', marginBottom: 12, borderBottom: '0.5px solid #f0f0f0', paddingBottom: 12 }}>
+            <div style={{ position: 'fixed', inset: 0, background: '#FAF7F2', zIndex: 150, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', marginBottom: 12, borderBottom: '0.5px solid #EAE4DC', paddingBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Archive</div>
-                  <button onClick={() => setShowArchive(false)} style={{ fontSize: 13, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Done</button>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#3A3530' }}>Archive</div>
+                  <button onClick={() => setShowArchive(false)} style={{ fontSize: 13, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #D4C9BC', background: '#FAF7F2', color: '#5C504A', cursor: 'pointer' }}>Done</button>
                 </div>
                 <input placeholder="Search transactions..." value={archiveSearch} onChange={e => setArchiveSearch(e.target.value)}
-                  style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #e0e0e0', borderRadius: 10, background: '#f8f8f8', boxSizing: 'border-box' as const, marginBottom: 8 }} />
-                <select value={archiveSort} onChange={e => setArchiveSort(e.target.value as any)} style={{ width: '100%', fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', boxSizing: 'border-box' as const }}>
+                  style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #D4C9BC', borderRadius: 10, background: '#F0EBE3', boxSizing: 'border-box' as const, marginBottom: 8 }} />
+                <select value={archiveSort} onChange={e => setArchiveSort(e.target.value as any)} style={{ width: '100%', fontSize: 12, padding: '7px 10px', border: '0.5px solid #D4C9BC', borderRadius: 8, background: '#F0EBE3', boxSizing: 'border-box' as const }}>
                   <option value="date">Sort by recent</option>
                   <option value="amount">Sort by amount</option>
                   <option value="merchant">Sort by merchant</option>
                 </select>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 20px', paddingBottom: 40 }}>
-                {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>No archived transactions.</div>}
+                {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#9C8E82', fontSize: 13 }}>No archived transactions.</div>}
                 {filteredArchive.map(t => <ArchiveCard key={t.id} t={t} onRecover={t => { recoverTxn(t); }} />)}
               </div>
             </div>
@@ -697,9 +675,9 @@ export default function App() {
 
         {uploadModal && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
-            <div style={{ background: 'white', width: '100%', borderRadius: '16px 16px 0 0', padding: '24px 20px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
+            <div style={{ background: '#FAF7F2', width: '100%', borderRadius: '16px 16px 0 0', padding: '24px 20px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
               <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 6 }}>Upload {uploadModal.source === 'amex' ? 'Amex' : 'Chase'} CSV</div>
-              <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>Select account to import into</div>
+              <div style={{ fontSize: 13, color: '#8C8279', marginBottom: 20 }}>Select account to import into</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                 {manualAccountsDb.map(a => (
                   <button key={a.id} onClick={() => setUploadAccount(a.name)} style={{
@@ -710,20 +688,20 @@ export default function App() {
                   }}>{a.name}</button>
                 ))}
                 <button onClick={() => { const n = prompt('New account name?'); if (n) setUploadAccount(n); }} style={{
-                  padding: '12px 16px', borderRadius: 10, textAlign: 'left', fontSize: 14, color: '#888', cursor: 'pointer',
+                  padding: '12px 16px', borderRadius: 10, textAlign: 'left', fontSize: 14, color: '#8C8279', cursor: 'pointer',
                   border: uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? '1.5px solid #1a1a1a' : '0.5px dashed #ccc',
-                  background: 'white',
+                  background: '#FAF7F2',
                 }}>+ New account{uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? `: ${uploadAccount}` : ''}</button>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setUploadModal(null)} style={{ flex: 1, padding: '13px', borderRadius: 10, border: '0.5px solid #e0e0e0', background: 'white', fontSize: 15, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => setUploadModal(null)} style={{ flex: 1, padding: '13px', borderRadius: 10, border: '0.5px solid #D4C9BC', background: '#FAF7F2', fontSize: 15, cursor: 'pointer' }}>Cancel</button>
                 <button disabled={!uploadAccount} onClick={async () => {
                   const csv = await uploadModal.file.text();
                   const r = await fetch('/api/transactions/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv, source: uploadModal.source, accountName: uploadAccount }) }).then(r => r.json());
                   setUploadModal(null);
                   alert('Inserted: ' + r.inserted + ', Skipped: ' + r.skipped);
                   fetchFromSupabase(); fetchArchived(); fetchManualAccounts();
-                }} style={{ flex: 2, padding: '13px', borderRadius: 10, border: 'none', background: uploadAccount ? '#1a1a1a' : '#ccc', color: 'white', fontSize: 15, fontWeight: 600, cursor: uploadAccount ? 'pointer' : 'default' }}>
+                }} style={{ flex: 2, padding: '13px', borderRadius: 10, border: 'none', background: uploadAccount ? '#E8654A' : '#C4B9AE', color: 'white', fontSize: 15, fontWeight: 600, cursor: uploadAccount ? 'pointer' : 'default' }}>
                   Import{uploadAccount ? ' to ' + uploadAccount : ''}
                 </button>
               </div>
@@ -733,7 +711,7 @@ export default function App() {
 
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+          background: 'rgba(250,247,242,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
           borderTop: '0.5px solid #efefef', paddingBottom: 'env(safe-area-inset-bottom)',
           display: 'flex', justifyContent: 'space-evenly', alignItems: 'center',
           height: TAB_H, zIndex: 100,
@@ -742,7 +720,7 @@ export default function App() {
             <button key={id} onClick={() => setTab(id)} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               background: 'none', border: 'none', cursor: 'pointer',
-              color: tab === id ? '#1a1a1a' : '#bbb', padding: '8px 12px',
+              color: tab === id ? '#E8654A' : '#B0A49A', padding: '8px 12px',
             }}>
               <Icon />
               <span style={{ fontSize: 10, fontWeight: tab === id ? 600 : 400 }}>{label}</span>

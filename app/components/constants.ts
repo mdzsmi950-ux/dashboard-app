@@ -1,16 +1,19 @@
 import type { Label, Category, Txn } from './types';
 
+// Headspace-inspired palette
+// Cream: #FAF7F2  Coral: #E8654A  Teal: #4ABFBF  Purple: #7B6EA6  Warm gray: #8C8279
+
 export const labelColors: Record<Label, { bg: string; border: string; color: string }> = {
-  Mine:   { bg: '#E8EEF4', border: '#B0C0D0', color: '#3A5068' },
-  Joint:  { bg: '#E8F4EE', border: '#B0D0BC', color: '#3A6850' },
-  Ignore: { bg: '#F5F5F5', border: '#DDD',    color: '#AAA'    },
+  Mine:   { bg: '#E8F6F6', border: '#4ABFBF', color: '#2A8A8A' },
+  Joint:  { bg: '#FCEEE9', border: '#E8654A', color: '#C04830' },
+  Ignore: { bg: '#F5F2EE', border: '#D4C9BC', color: '#9C8E82' },
 };
 
 export const catColors: Record<Category, { bg: string; border: string; color: string }> = {
-  Needs:   { bg: '#F4EEE8', border: '#D0C0B0', color: '#685240' },
-  Wants:   { bg: '#EEF4E8', border: '#BCD0B0', color: '#506840' },
-  Impulse: { bg: '#F4E8EE', border: '#D0B0BC', color: '#683A52' },
-  Income:  { bg: '#E8F4E8', border: '#A0D0A0', color: '#2A6030' },
+  Needs:   { bg: '#E8F6F6', border: '#4ABFBF', color: '#2A8A8A' },
+  Wants:   { bg: '#F0EDF8', border: '#A99ACC', color: '#5E4E8A' },
+  Impulse: { bg: '#FCEEE9', border: '#E8654A', color: '#C04830' },
+  Income:  { bg: '#EEF7EE', border: '#7DBF7D', color: '#3A7A3A' },
 };
 
 export const fmt = (n: number) => "$" + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -29,6 +32,6 @@ export const incomeShare = (t: Txn) => {
   return t.label === 'Joint' ? Math.abs(t.amount) / 2 : t.label === 'Mine' ? Math.abs(t.amount) : 0;
 };
 
-export const inp = { padding: '6px 10px', borderRadius: 8, border: '0.5px solid #ddd', background: 'white', color: '#000', fontSize: 13, width: '100%', boxSizing: 'border-box' as const };
-export const addBtn = { padding: '6px 12px', borderRadius: 8, border: '0.5px solid #ddd', background: '#f5f5f5', color: '#000', fontSize: 13, cursor: 'pointer' };
-export const delBtn = { padding: '2px 8px', borderRadius: 8, border: 'none', background: 'transparent', color: '#b04040', fontSize: 12, cursor: 'pointer' };
+export const inp = { padding: '6px 10px', borderRadius: 8, border: '0.5px solid #D4C9BC', background: 'white', color: '#3A3530', fontSize: 13, width: '100%', boxSizing: 'border-box' as const };
+export const addBtn = { padding: '6px 12px', borderRadius: 8, border: '0.5px solid #D4C9BC', background: '#F5F2EE', color: '#3A3530', fontSize: 13, cursor: 'pointer' };
+export const delBtn = { padding: '2px 8px', borderRadius: 8, border: 'none', background: 'transparent', color: '#E8654A', fontSize: 12, cursor: 'pointer' };
