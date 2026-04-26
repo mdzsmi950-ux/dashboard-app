@@ -19,6 +19,7 @@ function parseCSV(text) {
 }
 
 function parseChase(text, accountName) {
+  // Columns: Transaction Date, Post Date, Description, Category, Type, Amount, Memo
   const rows = parseCSV(text).slice(1);
   return rows.map(cols => {
     const date = cols[0]; const description = cols[2]; const amount = cols[5];
@@ -34,15 +35,24 @@ function parseChase(text, accountName) {
 }
 
 function parseAmex(text, accountName) {
-  const rows = parseCSV(text).slice(1);
-  return rows.map(cols => {
-    const date = cols[0]; const description = cols[1]; const amount = cols[4];
+  const rows = parseCSV(text);
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(h => h.toLowerCase());
+  // Find amount column by header name
+  const amountIdx = headers.indexOf('amount');
+  const descIdx = headers.indexOf('description');
+  const dateIdx = headers.indexOf('date');
+  
+  return rows.slice(1).map(cols => {
+    const date = cols[dateIdx]; 
+    const description = cols[descIdx]; 
+    const amount = cols[amountIdx];
     if (!date || !description || amount === undefined) return null;
     const [m, d, y] = date.split('/');
     return {
       date: `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`,
       merchant: description,
-      amount: parseFloat(amount),
+      amount: parseFloat(amount), // Amex: positive = charge
       account: accountName,
     };
   }).filter(Boolean);
@@ -86,7 +96,7 @@ export async function POST(req) {
     inserted++;
   }
 
-  // Auto-create manual account entry if it doesn't exist
+  // Auto-create manual account if it doesn't exist
   const { data: existingAccount } = await supabase
     .from('manual_accounts')
     .select('id')
