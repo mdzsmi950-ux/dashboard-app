@@ -1,4 +1,28 @@
 import { plaidClient } from '@/lib/plaid';
+
+function applyRules(merchant, account) {
+  const m = merchant?.toLowerCase() || '';
+  const a = account?.toLowerCase() || '';
+
+  // Whole Foods card → Joint / Needs
+  if (a.includes('wholefoods') || a.includes('whole foods')) {
+    return { label: 'Joint', category: 'Needs' };
+  }
+
+  // Merchant rules → Joint / Needs
+  const jointNeeds = [
+    /^amazon mktpl/i,
+    /^amazon\.com/i,
+    /trader joe/i,
+    /banfield/i,
+    /dierbergs/i,
+  ];
+  for (const pattern of jointNeeds) {
+    if (pattern.test(merchant)) return { label: 'Joint', category: 'Needs' };
+  }
+
+  return null;
+}
 import { supabase } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 
@@ -82,16 +106,21 @@ export async function GET(req) {
         if (existingByContent) continue;
 
         const isInternalTransfer = /^(To|From) (Checking|Savings)/i.test(merchant);
+        const rule = applyRules(merchant, accountName);
+        const label = isInternalTransfer ? 'Ignore' : (rule?.label || null);
+        const category = isInternalTransfer ? null : (rule?.category || null);
+        const archived = isInternalTransfer || (rule !== null);
         await supabase.from('transactions').insert({
           id: t.transaction_id,
           date: t.date,
           merchant,
           amount: t.amount,
           account: accountName,
-          label: isInternalTransfer ? 'Ignore' : null,
-          category: null,
+          label,
+          category,
           notes: '',
-          archived: isInternalTransfer,
+          archived,
+          ...(archived && !isInternalTransfer ? { archived_at: new Date().toISOString() } : {}),
         });
       }
     } catch (e) {

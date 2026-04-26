@@ -1,4 +1,16 @@
 import { supabase } from '@/lib/supabase';
+
+function applyRules(merchant, account) {
+  const a = account?.toLowerCase() || '';
+  if (a.includes('wholefoods') || a.includes('whole foods')) {
+    return { label: 'Joint', category: 'Needs' };
+  }
+  const jointNeeds = [/^amazon mktpl/i, /^amazon\.com/i, /trader joe/i, /banfield/i, /dierbergs/i];
+  for (const pattern of jointNeeds) {
+    if (pattern.test(merchant)) return { label: 'Joint', category: 'Needs' };
+  }
+  return null;
+}
 import { NextResponse } from 'next/server';
 
 function parseCSV(text) {
@@ -67,6 +79,7 @@ export async function POST(req) {
   for (const t of txns) {
     if (!t.date || isNaN(t.amount)) { skipped++; continue; }
     const isInternalTransfer = /^(To|From) (Checking|Savings)/i.test(t.merchant);
+    const rule = applyRules(t.merchant, t.account);
 
     const { data: existing } = await supabase
       .from('transactions')
@@ -82,16 +95,20 @@ export async function POST(req) {
     const id = `${t.account}-${t.date}-${t.merchant}-${t.amount}`
       .replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase().slice(0, 80);
 
+    const label = isInternalTransfer ? 'Ignore' : (rule?.label || null);
+    const category = isInternalTransfer ? null : (rule?.category || null);
+    const archived = isInternalTransfer || (rule !== null);
     await supabase.from('transactions').insert({
       id,
       date: t.date,
       merchant: t.merchant,
       amount: t.amount,
       account: t.account,
-      label: isInternalTransfer ? 'Ignore' : null,
-      category: null,
+      label,
+      category,
       notes: '',
-      archived: isInternalTransfer,
+      archived,
+      ...(archived && !isInternalTransfer ? { archived_at: new Date().toISOString() } : {}),
     });
     inserted++;
   }
