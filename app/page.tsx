@@ -723,7 +723,7 @@ export default function App() {
               color: tab === id ? theme.tabActive : theme.tabInactive, padding: '8px 12px',
             }}>
               <Icon />
-              <span style={{ fontSize: 10, fontWeight: tab === id ? 600 : 400 }}>{label}</span>
+              <span style={{ fontSize: 10, fontWeight: 500, opacity: tab === id ? 1 : 0.35, minWidth: 60, textAlign: 'center' }}>{label}</span>
             </button>
           ))}
         </div>
