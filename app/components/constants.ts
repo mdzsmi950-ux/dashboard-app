@@ -1,22 +1,71 @@
 import type { Label, Category, Txn } from './types';
 
-// Light, airy palette on warm beige
-// Very desaturated, soft tints — nothing deep or saturated
-// Black for text when needed
+// ─── Central color palette ────────────────────────────────────────────────────
+// Change colors here only — everything imports from theme
 
+export const theme = {
+  // Backgrounds
+  bg:           '#ffffff',
+  bgSubtle:     '#f5f5f5',
+
+  // Text
+  text:         '#1a1a1a',
+  textMid:      '#555555',
+  textSubtle:   '#888888',
+  textFaint:    '#aaaaaa',
+  textDisabled: '#cccccc',
+
+  // Borders & dividers
+  border:       '#e8e8e8',
+  borderMid:    '#e0e0e0',
+  divider:      '#f0f0f0',
+
+  // Accent — sage green (Mine, Needs, Income, positive amounts)
+  accent:       '#3A6B4A',
+  accentLight:  '#B8D4C0',
+  accentBg:     '#E2EFE8',
+
+  // Secondary — dusty rose (Joint, Impulse, archive recover)
+  secondary:    '#8B4060',
+  secondaryLight:'#E0C0CE',
+  secondaryBg:  '#F5E6ED',
+
+  // Wants — slate blue
+  wants:        '#3A5080',
+  wantsBg:      '#E8EEF5',
+  wantsLight:   '#C0CCE0',
+
+  // UI states
+  tabActive:    '#1a1a1a',
+  tabInactive:  '#cccccc',
+  pillBorder:   '#e8e8e8',
+
+  // Upload modal
+  uploadActive: '#1a1a1a',
+  uploadInactive:'#cccccc',
+};
+
+// ─── Label colors ─────────────────────────────────────────────────────────────
 export const labelColors: Record<Label, { bg: string; border: string; color: string }> = {
-  Mine:   { bg: '#E2EFE8', border: '#B8D4C0', color: '#3A6B4A' },
-  Joint:  { bg: '#F5E6ED', border: '#E0C0CE', color: '#8B4060' },
-  Ignore: { bg: '#EDEBE6', border: '#CFC9BC', color: '#8C8279' },
+  Mine:   { bg: theme.accentBg,    border: theme.accentLight,    color: theme.accent    },
+  Joint:  { bg: theme.secondaryBg, border: theme.secondaryLight, color: theme.secondary },
+  Ignore: { bg: theme.bgSubtle,    border: theme.borderMid,      color: theme.textFaint },
 };
 
+// ─── Category colors ──────────────────────────────────────────────────────────
 export const catColors: Record<Category, { bg: string; border: string; color: string }> = {
-  Needs:   { bg: '#E2EFE8', border: '#B8D4C0', color: '#3A6B4A' },
-  Wants:   { bg: '#E8EEF5', border: '#C0CCE0', color: '#3A5080' },
-  Impulse: { bg: '#F5E6ED', border: '#E0C0CE', color: '#8B4060' },
-  Income:  { bg: '#E2EFE8', border: '#B8D4C0', color: '#3A6B4A' },
+  Needs:   { bg: theme.accentBg,    border: theme.accentLight,    color: theme.accent    },
+  Wants:   { bg: theme.wantsBg,     border: theme.wantsLight,     color: theme.wants     },
+  Impulse: { bg: theme.secondaryBg, border: theme.secondaryLight, color: theme.secondary },
+  Income:  { bg: theme.accentBg,    border: theme.accentLight,    color: theme.accent    },
 };
 
+// ─── Utility styles ───────────────────────────────────────────────────────────
+export const inp = { padding: '6px 10px', borderRadius: 8, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: theme.text, fontSize: 13, width: '100%', boxSizing: 'border-box' as const };
+export const addBtn = { padding: '6px 12px', borderRadius: 8, border: `0.5px solid ${theme.borderMid}`, background: theme.bgSubtle, color: theme.text, fontSize: 13, cursor: 'pointer' };
+export const delBtn = { padding: '2px 8px', borderRadius: 8, border: 'none', background: 'transparent', color: theme.secondary, fontSize: 12, cursor: 'pointer' };
+
+// ─── Formatters ───────────────────────────────────────────────────────────────
 export const fmt = (n: number) => "$" + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 export const fmtSigned = (n: number) => (n < 0 ? '-' : '') + fmt(n);
 export const today = new Date().toISOString().split('T')[0];
@@ -31,28 +80,4 @@ export const myShare = (t: Txn) => {
 export const incomeShare = (t: Txn) => {
   if (t.category !== 'Income' || !t.label || t.label === 'Ignore') return 0;
   return t.label === 'Joint' ? Math.abs(t.amount) / 2 : t.label === 'Mine' ? Math.abs(t.amount) : 0;
-};
-
-export const inp = { padding: '6px 10px', borderRadius: 8, border: '0.5px solid #CFC9BC', background: '#FDFAF6', color: '#1a1a1a', fontSize: 13, width: '100%', boxSizing: 'border-box' as const };
-export const addBtn = { padding: '6px 12px', borderRadius: 8, border: '0.5px solid #CFC9BC', background: '#EDEBE6', color: '#1a1a1a', fontSize: 13, cursor: 'pointer' };
-export const delBtn = { padding: '2px 8px', borderRadius: 8, border: 'none', background: 'transparent', color: '#8B4060', fontSize: 12, cursor: 'pointer' };
-
-// ─── Central theme — import this everywhere instead of hardcoding ───────────
-export const theme = {
-  bg:          '#ffffff',   // page background
-  bgSubtle:    '#f5f5f5',   // inputs, selects, subtle areas
-  border:      '#e8e8e8',   // default borders
-  borderMid:   '#e0e0e0',   // slightly stronger borders
-  text:        '#1a1a1a',   // primary text
-  textMid:     '#555',      // secondary text
-  textSubtle:  '#888',      // tertiary text
-  textFaint:   '#aaa',      // very faint text/placeholders
-  textDisabled:'#bbb',      // disabled pills
-  income:      '#3A6B4A',   // income green (from Needs/Mine)
-  positive:    '#3A6B4A',   // positive amounts
-  tabActive:   '#1a1a1a',   // active tab
-  tabInactive: '#bbb',      // inactive tab
-  pillBorder:  '#e8e8e8',   // unselected pill border
-  divider:     '#f0f0f0',   // list dividers
-  cardBg:      '#ffffff',   // card/overlay background
 };

@@ -69,7 +69,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
       {/* Swipe-to-ignore background */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: ready ? '#aaa' : theme.textDisabled,
+        background: ready ? theme.textMid : theme.textDisabled,
         display: 'flex', alignItems: 'center', paddingLeft: 20,
         opacity: swiping ? 1 : 0, transition: 'background 0.15s',
       }}>
@@ -91,7 +91,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
             <div style={{ fontSize: 14, fontWeight: 500, color: theme.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
             <div style={{ fontSize: 11, color: theme.textFaint, marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? theme.income : '#1a1a1a', flexShrink: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? theme.accent : theme.text, flexShrink: 0 }}>
             {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
           </div>
         </div>
@@ -125,7 +125,7 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderBottom: `0.5px solid ${theme.divider}` }}>
       <div style={{
-        position: 'absolute', inset: 0, background: ready ? '#8B4060' : '#E0C0CE',
+        position: 'absolute', inset: 0, background: ready ? theme.secondary : theme.secondaryLight,
         display: 'flex', alignItems: 'center', paddingLeft: 20,
         opacity: swiping ? 1 : 0, transition: 'background 0.15s',
       }}>
@@ -149,7 +149,7 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
             </div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? theme.income : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? theme.accent : theme.text }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
             <div style={{ fontSize: 11, color: theme.textFaint, marginTop: 2 }}>{t.date.slice(5)}</div>
           </div>
         </div>
@@ -164,9 +164,9 @@ function PieChart({ needs, wants, impulse }: { needs: number; wants: number; imp
 
   const cx = 80, cy = 80, r = 70;
   const slices = [
-    { value: needs,   color: theme.income, label: 'Needs' },
-    { value: wants,   color: '#8B4060', label: 'Wants' },
-    { value: impulse, color: '#E0C0CE', label: 'Impulse' },
+    { value: needs,   color: theme.accent, label: 'Needs' },
+    { value: wants,   color: theme.wants, label: 'Wants' },
+    { value: impulse, color: theme.secondary, label: 'Impulse' },
   ].filter(s => s.value > 0);
 
   let angle = -Math.PI / 2;
@@ -508,7 +508,7 @@ export default function App() {
                   <div>
                     <div style={{ fontSize: 22, fontWeight: 700, color: theme.text }}>Transactions</div>
                     {txns.filter(t => !t.label).length > 0 && (
-                      <div style={{ fontSize: 12, color: '#E0C0CE', marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: theme.secondaryLight, marginTop: 2 }}>
                         {txns.filter(t => !t.label).length} to review
                       </div>
                     )}
@@ -604,8 +604,8 @@ export default function App() {
               <div style={{ fontSize: 10, color: theme.textFaint, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Year to Date</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: theme.income, marginBottom: 4 }}>Income</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: theme.income }}>{fmt(ytdStats.income)}</div>
+                  <div style={{ fontSize: 10, color: theme.accent, marginBottom: 4 }}>Income</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: theme.accent }}>{fmt(ytdStats.income)}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: theme.textFaint, marginBottom: 4 }}>Spending</div>
@@ -626,8 +626,8 @@ export default function App() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
                   <div>
-                    <div style={{ fontSize: 10, color: theme.income, marginBottom: 4 }}>Income</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: theme.income }}>{fmt(monthlyStats.income)}</div>
+                    <div style={{ fontSize: 10, color: theme.accent, marginBottom: 4 }}>Income</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: theme.accent }}>{fmt(monthlyStats.income)}</div>
                   </div>
                   <div>
                     <div style={{ fontSize: 10, color: theme.textFaint, marginBottom: 4 }}>Spending</div>
@@ -637,11 +637,11 @@ export default function App() {
                 <SpendingChart data={chartData} />
                 <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <div style={{ width: 16, height: 2, background: '#B8D4C0', borderRadius: 1 }}/>
+                    <div style={{ width: 16, height: 2, background: theme.accentLight, borderRadius: 1 }}/>
                     <span style={{ fontSize: 10, color: theme.textFaint }}>{monthLabel(chartData.curMonth)}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <div style={{ width: 16, height: 2, background: '#E0C0CE', borderRadius: 1 }}/>
+                    <div style={{ width: 16, height: 2, background: theme.secondaryLight, borderRadius: 1 }}/>
                     <span style={{ fontSize: 10, color: theme.textFaint }}>{monthLabel(chartData.lastMonth)}</span>
                   </div>
                 </div>
@@ -682,14 +682,14 @@ export default function App() {
                 {manualAccountsDb.map(a => (
                   <button key={a.id} onClick={() => setUploadAccount(a.name)} style={{
                     padding: '12px 16px', borderRadius: 10, textAlign: 'left', fontSize: 14, cursor: 'pointer',
-                    border: uploadAccount === a.name ? '1.5px solid #1a1a1a' : `0.5px solid ${theme.borderMid}`,
-                    background: uploadAccount === a.name ? '#F0EBE3' : '#ffffff',
+                    border: uploadAccount === a.name ? `1.5px solid ${theme.text}` : `0.5px solid ${theme.borderMid}`,
+                    background: uploadAccount === a.name ? theme.accentBg : theme.bg,
                     fontWeight: uploadAccount === a.name ? 600 : 400,
                   }}>{a.name}</button>
                 ))}
                 <button onClick={() => { const n = prompt('New account name?'); if (n) setUploadAccount(n); }} style={{
                   padding: '12px 16px', borderRadius: 10, textAlign: 'left', fontSize: 14, color: theme.textFaint, cursor: 'pointer',
-                  border: uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? '1.5px solid #1a1a1a' : '0.5px dashed #ccc',
+                  border: uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? `1.5px solid ${theme.text}` : `0.5px dashed ${theme.borderMid}`,
                   background: theme.bg,
                 }}>+ New account{uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? `: ${uploadAccount}` : ''}</button>
               </div>
@@ -701,7 +701,7 @@ export default function App() {
                   setUploadModal(null);
                   alert('Inserted: ' + r.inserted + ', Skipped: ' + r.skipped);
                   fetchFromSupabase(); fetchArchived(); fetchManualAccounts();
-                }} style={{ flex: 2, padding: '13px', borderRadius: 10, border: 'none', background: uploadAccount ? '#E0C0CE' : '#C4B9AE', color: 'white', fontSize: 15, fontWeight: 600, cursor: uploadAccount ? 'pointer' : 'default' }}>
+                }} style={{ flex: 2, padding: '13px', borderRadius: 10, border: 'none', background: uploadAccount ? theme.secondary : theme.borderMid, color: 'white', fontSize: 15, fontWeight: 600, cursor: uploadAccount ? 'pointer' : 'default' }}>
                   Import{uploadAccount ? ' to ' + uploadAccount : ''}
                 </button>
               </div>
@@ -710,8 +710,8 @@ export default function App() {
         )}
 
         <div style={{
-          background: '#ffffff',
-          borderTop: '0.5px solid #f0f0f0',
+          background: theme.bg,
+          borderTop: `0.5px solid ${theme.divider}`,
           paddingBottom: 'env(safe-area-inset-bottom)',
           display: 'flex', justifyContent: 'space-evenly', alignItems: 'center',
           height: TAB_H, flexShrink: 0,
@@ -720,7 +720,7 @@ export default function App() {
             <button key={id} onClick={() => setTab(id)} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               background: 'none', border: 'none', cursor: 'pointer',
-              color: tab === id ? '#1a1a1a' : '#ccc', padding: '8px 12px',
+              color: tab === id ? theme.tabActive : theme.tabInactive, padding: '8px 12px',
             }}>
               <Icon />
               <span style={{ fontSize: 10, fontWeight: tab === id ? 600 : 400 }}>{label}</span>
