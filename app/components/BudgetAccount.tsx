@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import type { Bill, BudgetIncome } from './types';
+import type { Bill, BudgetIncome, Txn } from './types';
 import { fmt, fmtSigned, labelDate, today, inp, addBtn, delBtn } from './constants';
 
 function AmountInput({ value, onCommit }: { value: string; onCommit: (val: string) => void }) {
@@ -8,7 +8,16 @@ function AmountInput({ value, onCommit }: { value: string; onCommit: (val: strin
   return <input type="number" value={local} onChange={e => setLocal(e.target.value)} onBlur={() => onCommit(local)} style={{ ...inp, width: 80, textAlign: 'right' }} />;
 }
 
-export default function BudgetAccount({ title, bills, income, onTogglePaid, onUpdateAmount, onDeleteBill, onDeleteIncome, onAddBill, onAddIncome }: any) {
+export default function BudgetAccount({ title, bills, income, txns = [], onTogglePaid, onUpdateAmount, onDeleteBill, onDeleteIncome, onAddBill, onAddIncome }: any) {
+
+  const findPaycheck = (date: string) => {
+    const d = new Date(date);
+    return (txns as Txn[]).find(t => {
+      if (!t.merchant?.toUpperCase().includes('INVESTORS TITLE')) return false;
+      const diff = Math.abs(new Date(t.date).getTime() - d.getTime()) / 86400000;
+      return diff <= 3;
+    });
+  };
   const [subtab, setSubtab] = useState('overview');
   const [newBill, setNewBill] = useState({ name: '', amount: '', due: '', autopay: false });
   const [newInc, setNewInc] = useState({ date: '', amount: '', label: '' });
@@ -71,7 +80,17 @@ export default function BudgetAccount({ title, bills, income, onTogglePaid, onUp
           {groups().map((g: any, i: number) => (
             <div key={i} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '0.5px solid #eee' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{g.pay.label} <span style={{ fontWeight: 400, color: '#888' }}>{labelDate(g.pay.date)} · {fmt(g.income)}</span></span>
+                {(() => {
+                const actual = g.pay.label === 'Paycheck' ? findPaycheck(g.pay.date) : null;
+                const displayAmt = actual ? Math.abs(actual.amount) : g.income;
+                return (
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>
+                    {g.pay.label}{' '}
+                    <span style={{ fontWeight: 400, color: '#888' }}>{labelDate(g.pay.date)} · {fmt(displayAmt)}</span>
+                    {actual && <span style={{ fontSize: 10, color: '#3A6850', marginLeft: 4 }}>actual</span>}
+                  </span>
+                );
+              })()}
                 <span style={{ fontSize: 12, fontWeight: 500, color: g.balance >= 0 ? '#3A6850' : '#b04040' }}>balance: {fmtSigned(g.balance)}</span>
               </div>
               {g.bills.length === 0
@@ -126,7 +145,12 @@ export default function BudgetAccount({ title, bills, income, onTogglePaid, onUp
                 <div style={{ fontSize: 11, color: '#aaa' }}>{labelDate(p.date)}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#3A6850' }}>{fmt(parseFloat(p.amount || '0'))}</span>
+                {(() => {
+                  const actual = p.label === 'Paycheck' ? findPaycheck(p.date) : null;
+                  return actual
+                    ? <span style={{ fontSize: 13, fontWeight: 500, color: '#3A6850' }}>{fmt(Math.abs(actual.amount))} <span style={{ fontSize: 10, color: '#3A6850' }}>actual</span></span>
+                    : <span style={{ fontSize: 13, fontWeight: 500, color: '#3A6850' }}>{fmt(parseFloat(p.amount || '0'))}</span>;
+                })()}
                 <button style={delBtn} onClick={() => onDeleteIncome(p.id)}>✕</button>
               </div>
             </div>
