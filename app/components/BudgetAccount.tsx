@@ -87,7 +87,7 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
                   <span style={{ fontSize: 13, fontWeight: 500 }}>
                     {g.pay.label}{' '}
                     <span style={{ fontWeight: 400, color: '#888' }}>{labelDate(g.pay.date)} · {fmt(displayAmt)}</span>
-                    {actual && <span style={{ fontSize: 10, color: '#3A6850', marginLeft: 4 }}>actual</span>}
+                    {actual && <span style={{ color: '#3A6850', marginLeft: 4, fontSize: 12 }}>✓</span>}
                   </span>
                 );
               })()}
@@ -148,7 +148,7 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
                 {(() => {
                   const actual = p.label === 'Paycheck' ? findPaycheck(p.date) : null;
                   return actual
-                    ? <span style={{ fontSize: 13, fontWeight: 500, color: '#3A6850' }}>{fmt(Math.abs(actual.amount))} <span style={{ fontSize: 10, color: '#3A6850' }}>actual</span></span>
+                    ? <span style={{ fontSize: 13, fontWeight: 500, color: '#3A6850' }}>{fmt(Math.abs(actual.amount))} <span style={{ fontSize: 12, color: '#3A6850' }}>✓</span></span>
                     : <span style={{ fontSize: 13, fontWeight: 500, color: '#3A6850' }}>{fmt(parseFloat(p.amount || '0'))}</span>;
                 })()}
                 <button style={delBtn} onClick={() => onDeleteIncome(p.id)}>✕</button>
