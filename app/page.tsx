@@ -21,18 +21,11 @@ const IconSummary = () => (
     <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
   </svg>
 );
-const IconArchive = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-    <rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8"/>
-    <line x1="10" y1="13" x2="14" y2="13"/>
-  </svg>
-);
 
 const TABS = [
   { id: 'transactions', label: 'Transactions', Icon: IconTxn },
   { id: 'budget',       label: 'Budget',       Icon: IconBudget },
   { id: 'summary',      label: 'Summary',      Icon: IconSummary },
-  { id: 'archive',      label: 'Archive',      Icon: IconArchive },
 ];
 
 const isCompleteForArchive = (t: Txn) =>
@@ -135,6 +128,7 @@ export default function App() {
   const [archiveSearch, setArchiveSearch] = useState('');
   const [filterAccount, setFilterAccount] = useState('All');
   const [filterMonth, setFilterMonth] = useState('All');
+  const [showArchive, setShowArchive] = useState(false);
   const [uploadModal, setUploadModal] = useState<{ file: File; source: string } | null>(null);
   const [uploadAccount, setUploadAccount] = useState('');
 
@@ -291,17 +285,20 @@ export default function App() {
               <div style={{ padding: '0 20px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
-                  <label style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
-                    + CSV
-                    <input type="file" accept=".csv" style={{ display: 'none' }} onChange={e => {
-                      const file = e.target.files?.[0]; if (!file) return;
-                      const name = file.name.toLowerCase();
-                      const src = (name.includes('amex') || name.includes('activity') || name.includes('gold') || name.includes('blue')) ? 'amex' : 'chase';
-                      setUploadModal({ file, source: src });
-                      setUploadAccount(manualAccountsDb[0]?.name || '');
-                      e.target.value = '';
-                    }} />
-                  </label>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => setShowArchive(true)} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Archive</button>
+                    <label style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
+                      + CSV
+                      <input type="file" accept=".csv" style={{ display: 'none' }} onChange={e => {
+                        const file = e.target.files?.[0]; if (!file) return;
+                        const name = file.name.toLowerCase();
+                        const src = (name.includes('amex') || name.includes('activity') || name.includes('gold') || name.includes('blue')) ? 'amex' : 'chase';
+                        setUploadModal({ file, source: src });
+                        setUploadAccount(manualAccountsDb[0]?.name || '');
+                        e.target.value = '';
+                      }} />
+                    </label>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', minWidth: 0 }}>
@@ -404,16 +401,19 @@ export default function App() {
             </div>
           )}
 
-          {tab === 'archive' && (
-            <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden', width: '100%' }}>
-              <div style={{ padding: '0 20px', marginBottom: 16 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>Archive</div>
+          {showArchive && (
+            <div style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 150, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', marginBottom: 12, borderBottom: '0.5px solid #f0f0f0', paddingBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Archive</div>
+                  <button onClick={() => setShowArchive(false)} style={{ fontSize: 13, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Done</button>
+                </div>
                 <input placeholder="Search transactions..." value={archiveSearch} onChange={e => setArchiveSearch(e.target.value)}
                   style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #e0e0e0', borderRadius: 10, background: '#f8f8f8', boxSizing: 'border-box' as const }} />
               </div>
-              {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>No archived transactions.</div>}
-              <div style={{ padding: '0 20px' }}>
-                {filteredArchive.map(t => <ArchiveCard key={t.id} t={t} onRecover={recoverTxn} />)}
+              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 20px', paddingBottom: 40 }}>
+                {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>No archived transactions.</div>}
+                {filteredArchive.map(t => <ArchiveCard key={t.id} t={t} onRecover={t => { recoverTxn(t); }} />)}
               </div>
             </div>
           )}
