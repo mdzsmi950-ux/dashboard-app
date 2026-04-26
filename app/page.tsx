@@ -76,7 +76,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
         <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>Ignore</span>
       </div>
       <div
-        style={{ padding: '10px 0', background: '#fff', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
+        style={{ padding: '12px 0', background: '#fff', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
         onTouchStart={e => { startX.current = e.touches[0].clientX; setSwipeX(0); }}
         onTouchMove={e => { if (startX.current === null) return; const dx = e.touches[0].clientX - startX.current; if (dx > 0) setSwipeX(dx); }}
         onTouchEnd={e => {
@@ -86,7 +86,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
           setSwipeX(0); startX.current = null;
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
           <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
             <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
@@ -95,13 +95,13 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
             {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 5, marginBottom: 5 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
           {(['Mine', 'Joint'] as Label[]).map(l => (
             <button key={l} onClick={e => { e.preventDefault(); updateField(t.id, 'label', l); }}
               style={solidPill(t.label === l, labelColors[l])}>{l}</button>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
             const disabled = !t.label || t.label === 'Ignore';
             return (
@@ -153,6 +153,50 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
             <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}</div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PieChart({ needs, wants, impulse }: { needs: number; wants: number; impulse: number }) {
+  const total = needs + wants + impulse;
+  if (total === 0) return null;
+
+  const cx = 80, cy = 80, r = 70;
+  const slices = [
+    { value: needs,   color: '#685240', label: 'Needs' },
+    { value: wants,   color: '#506840', label: 'Wants' },
+    { value: impulse, color: '#683A52', label: 'Impulse' },
+  ].filter(s => s.value > 0);
+
+  let angle = -Math.PI / 2;
+  const paths = slices.map(s => {
+    const sweep = (s.value / total) * 2 * Math.PI;
+    const x1 = cx + r * Math.cos(angle);
+    const y1 = cy + r * Math.sin(angle);
+    angle += sweep;
+    const x2 = cx + r * Math.cos(angle);
+    const y2 = cy + r * Math.sin(angle);
+    const large = sweep > Math.PI ? 1 : 0;
+    return { ...s, d: `M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`, pct: Math.round(s.value / total * 100) };
+  });
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 20 }}>
+      <svg width="160" height="160" viewBox="0 0 160 160">
+        {paths.map((p, i) => <path key={i} d={p.d} fill={p.color} opacity={0.85}/>)}
+        <circle cx={cx} cy={cy} r={28} fill="white"/>
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {paths.map((p, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 3, background: p.color, flexShrink: 0 }}/>
+            <div>
+              <div style={{ fontSize: 12, color: '#555', fontWeight: 500 }}>{p.label}</div>
+              <div style={{ fontSize: 11, color: '#aaa' }}>{p.pct}% · ${p.value.toFixed(0)}</div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -408,25 +452,25 @@ export default function App() {
     });
   }, [archivedTxns, archiveSearch, archiveSort]);
 
-  // Chart: cumulative daily spending for current and last month
+  // Chart: cumulative daily spending for selected month vs previous month
   const chartData = useMemo(() => {
     const now = new Date();
-    const curMonth = now.toISOString().slice(0, 7);
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonth = lastMonthDate.toISOString().slice(0, 7);
-    const todayDay = now.getDate();
-    const daysInCur = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysInLast = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0).getDate();
+    const curMonthStr = now.toISOString().slice(0, 7);
+    const activeMonth = selectedMonth || curMonthStr;
+    const [ay, am] = activeMonth.split('-').map(Number);
+    const prevDate = new Date(ay, am - 2, 1);
+    const prevMonth = prevDate.toISOString().slice(0, 7);
+    const isCurrentMonth = activeMonth === curMonthStr;
+    const todayDay = isCurrentMonth ? now.getDate() : new Date(ay, am, 0).getDate();
+    const daysInCur = new Date(ay, am, 0).getDate();
+    const daysInPrev = new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 0).getDate();
 
-    const curTxns = allTxns.filter(t => t.date.startsWith(curMonth));
-    const lastTxns = allTxns.filter(t => t.date.startsWith(lastMonth));
+    const curTxns = allTxns.filter(t => t.date.startsWith(activeMonth));
+    const prevTxns = allTxns.filter(t => t.date.startsWith(prevMonth));
 
     const buildCumulative = (txns: Txn[], days: number) => {
       const daily: number[] = Array(days + 1).fill(0);
-      txns.forEach(t => {
-        const day = parseInt(t.date.slice(8, 10));
-        daily[day] += myShare(t);
-      });
+      txns.forEach(t => { const day = parseInt(t.date.slice(8, 10)); daily[day] += myShare(t); });
       const cumulative: number[] = [];
       let sum = 0;
       for (let d = 1; d <= days; d++) { sum += daily[d]; cumulative.push(sum); }
@@ -435,14 +479,14 @@ export default function App() {
 
     return {
       current: buildCumulative(curTxns, daysInCur),
-      last: buildCumulative(lastTxns, daysInLast),
+      last: buildCumulative(prevTxns, daysInPrev),
       todayDay,
       daysInCur,
-      daysInLast,
-      curMonth,
-      lastMonth,
+      daysInLast: daysInPrev,
+      curMonth: activeMonth,
+      lastMonth: prevMonth,
     };
-  }, [allTxns]);
+  }, [allTxns, selectedMonth]);
 
   const maddieBills  = bills.filter(b => b.account === 'maddie');
   const maddieIncome = income.filter(p => p.account === 'maddie');
@@ -597,6 +641,8 @@ export default function App() {
                   </div>
                 ))}
               </div>
+              <PieChart needs={ytdStats.needs} wants={ytdStats.wants} impulse={ytdStats.impulse} />
+
               <div style={{ borderTop: '0.5px solid #f0f0f0', paddingTop: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <div style={{ fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly Breakdown</div>
