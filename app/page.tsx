@@ -305,6 +305,8 @@ export default function App() {
   const [archiveSort, setArchiveSort] = useState<'date' | 'txn_date' | 'amount' | 'merchant'>('date');
   const [uploadModal, setUploadModal] = useState<{ file: File; source: string } | null>(null);
   const [uploadAccount, setUploadAccount] = useState('');
+  const [plaidConnecting, setPlaidConnecting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     try {
@@ -372,6 +374,31 @@ export default function App() {
     setArchivedTxns(prev => prev.filter(t => t.id !== txn.id));
     setTxns(prev => [{ ...txn, archived: false }, ...prev]);
     await fetch('/api/transactions/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: txn.id, field: 'archived', val: false }) });
+  };
+
+  const connectBank = async () => {
+    setPlaidConnecting(true);
+    try {
+      const { hosted_link_url } = await fetch('/api/create-link-token', { method: 'POST' }).then(r => r.json());
+      if (hosted_link_url) {
+        // Post to native iOS to open ASWebAuthenticationSession
+        (window as any).webkit?.messageHandlers?.plaidLink?.postMessage(hosted_link_url);
+        // Fallback for web browser
+        if (!(window as any).webkit?.messageHandlers?.plaidLink) {
+          window.open(hosted_link_url, '_blank');
+        }
+      }
+    } catch (e) { console.error(e); }
+    setPlaidConnecting(false);
+  };
+
+  const refreshTransactions = async () => {
+    setRefreshing(true);
+    try {
+      await fetch('/api/transactions');
+      await Promise.all([fetchFromSupabase(), fetchArchived()]);
+    } catch (e) { console.error(e); }
+    setRefreshing(false);
   };
 
   const budgetApi = async (action: string, table: string, data: any) => {
@@ -514,6 +541,16 @@ export default function App() {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={connectBank} disabled={plaidConnecting} style={{ padding: '7px 10px', borderRadius: 20, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: plaidConnecting ? theme.textFaint : theme.accent, cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Connect bank">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/>
+                      </svg>
+                    </button>
+                    <button onClick={refreshTransactions} disabled={refreshing} style={{ padding: '7px 10px', borderRadius: 20, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: refreshing ? theme.textFaint : theme.textMid, cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Refresh transactions">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                      </svg>
+                    </button>
                     <button onClick={() => setShowArchive(true)} style={{ padding: '7px 10px', borderRadius: 20, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: theme.textMid, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                         <rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8"/><line x1="10" y1="13" x2="14" y2="13"/>
