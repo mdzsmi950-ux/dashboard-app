@@ -130,7 +130,7 @@ export default function App() {
   const [filterMonth, setFilterMonth] = useState('All');
   const [showArchive, setShowArchive] = useState(false);
   const [txnSort, setTxnSort] = useState<'date' | 'amount' | 'merchant'>('date');
-  const [archiveSort, setArchiveSort] = useState<'date' | 'amount' | 'merchant'>('date');
+  const [archiveSort, setArchiveSort] = useState<'date' | 'txn_date' | 'amount' | 'merchant'>('date');
   const [uploadModal, setUploadModal] = useState<{ file: File; source: string } | null>(null);
   const [uploadAccount, setUploadAccount] = useState('');
 
@@ -275,7 +275,8 @@ export default function App() {
     return [...base].sort((a, b) => {
       if (archiveSort === 'amount') return b.amount - a.amount;
       if (archiveSort === 'merchant') return a.merchant.localeCompare(b.merchant);
-      return 0; // default: keep archived_at order from server
+      if (archiveSort === 'txn_date') return b.date.localeCompare(a.date);
+      return 0; // 'date' = keep archived_at order from server
     });
   }, [archivedTxns, archiveSearch, archiveSort]);
 
@@ -330,7 +331,7 @@ export default function App() {
               </div>
               {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>Loading…</div>}
               {!loading && txns.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#aaa' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 20px', color: '#aaa' }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}>
                     <circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/>
                   </svg>
@@ -430,7 +431,7 @@ export default function App() {
                 <input placeholder="Search transactions..." value={archiveSearch} onChange={e => setArchiveSearch(e.target.value)}
                   style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #e0e0e0', borderRadius: 10, background: '#f8f8f8', boxSizing: 'border-box' as const, marginBottom: 8 }} />
                 <select value={archiveSort} onChange={e => setArchiveSort(e.target.value as any)} style={{ width: '100%', fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', boxSizing: 'border-box' as const }}>
-                  <option value="date">Sort by date</option>
+                  <option value="date">Sort by recent</option>
                   <option value="amount">Sort by amount</option>
                   <option value="merchant">Sort by merchant</option>
                 </select>
