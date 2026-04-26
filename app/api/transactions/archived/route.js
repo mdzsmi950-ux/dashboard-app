@@ -6,6 +6,6 @@ export async function GET() {
     .from('transactions')
     .select('*')
     .eq('archived', true)
-    .order('date', { ascending: false });
+    .order('archived_at', { ascending: false, nullsFirst: false });
   return NextResponse.json(data || []);
 }

@@ -81,16 +81,17 @@ export async function GET(req) {
 
         if (existingByContent) continue;
 
+        const isInternalTransfer = /^(To|From) (Checking|Savings)/i.test(merchant);
         await supabase.from('transactions').insert({
           id: t.transaction_id,
           date: t.date,
           merchant,
           amount: t.amount,
           account: accountName,
-          label: null,
+          label: isInternalTransfer ? 'Ignore' : null,
           category: null,
           notes: '',
-          archived: false,
+          archived: isInternalTransfer,
         });
       }
     } catch (e) {
