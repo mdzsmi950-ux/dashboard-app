@@ -418,7 +418,14 @@ export default function App() {
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ padding: '0 20px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
+                  <div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
+                    {txns.filter(t => !t.label).length > 0 && (
+                      <div style={{ fontSize: 12, color: '#E07A3A', marginTop: 2 }}>
+                        {txns.filter(t => !t.label).length} to review
+                      </div>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => setShowArchive(true)} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Archive</button>
                     <label style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
