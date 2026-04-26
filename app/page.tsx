@@ -40,33 +40,77 @@ const pill = (active: boolean, colors: { bg: string; border: string; color: stri
 } as const);
 
 function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: string, v: any) => void }) {
+  const startX = useRef<number | null>(null);
+  const [swipeX, setSwipeX] = useState(0);
+  const threshold = 80;
+  const swiping = swipeX > 10;
+  const ready = swipeX >= threshold;
+
+  const solidPill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
+    fontSize: 11, padding: '4px 12px', borderRadius: 20, cursor: 'pointer',
+    border: `0.5px solid ${active ? colors.border : '#e8e8e8'}`,
+    background: active ? colors.color : 'transparent',
+    color: active ? 'white' : '#bbb',
+    fontWeight: active ? 600 : 400,
+    transition: 'all 0.15s',
+  } as const);
+
+  const solidCatPill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
+    fontSize: 11, padding: '4px 12px', borderRadius: 20, cursor: 'pointer',
+    border: `0.5px solid ${active ? colors.color : '#e8e8e8'}`,
+    background: active ? colors.color : 'transparent',
+    color: active ? 'white' : '#bbb',
+    fontWeight: active ? 600 : 400,
+    transition: 'all 0.15s',
+  } as const);
+
+  const showCategories = t.label === 'Mine' || t.label === 'Joint';
+
   return (
-    <div style={{ padding: '14px 0', borderBottom: '0.5px solid #f0f0f0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-        <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
-          <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a' }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '0.5px solid #f0f0f0' }}>
+      {/* Swipe-to-ignore background */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: ready ? '#888' : '#bbb',
+        display: 'flex', alignItems: 'center', paddingLeft: 20,
+        opacity: swiping ? 1 : 0, transition: 'background 0.15s',
+      }}>
+        <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>Ignore</span>
+      </div>
+      <div
+        style={{ padding: '14px 0', background: '#fff', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
+        onTouchStart={e => { startX.current = e.touches[0].clientX; setSwipeX(0); }}
+        onTouchMove={e => { if (startX.current === null) return; const dx = e.touches[0].clientX - startX.current; if (dx > 0) setSwipeX(dx); }}
+        onTouchEnd={e => {
+          if (startX.current !== null && e.changedTouches[0].clientX - startX.current >= threshold) {
+            updateField(t.id, 'label', 'Ignore');
+          }
+          setSwipeX(0); startX.current = null;
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+          <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
+            <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#3A6850' : '#1a1a1a', flexShrink: 0 }}>
             {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
           </div>
-          <button onClick={e => { e.preventDefault(); updateField(t.id, 'label', 'Ignore'); }} style={pill(t.label === 'Ignore', labelColors['Ignore'])}>Ignore</button>
         </div>
-      </div>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-        {(['Mine', 'Joint'] as Label[]).map(l => (
-          <button key={l} onClick={e => { e.preventDefault(); updateField(t.id, 'label', l); }} style={pill(t.label === l, labelColors[l])}>{l}</button>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
-          const disabled = t.label === 'Ignore' || !t.label;
-          return (
-            <button key={cat} onClick={e => { e.preventDefault(); if (!disabled) updateField(t.id, 'category', cat); }}
-              style={pill(!disabled && t.category === cat, catColors[cat])}>{cat}</button>
-          );
-        })}
+        <div style={{ display: 'flex', gap: 6, marginBottom: showCategories ? 8 : 0 }}>
+          {(['Mine', 'Joint'] as Label[]).map(l => (
+            <button key={l} onClick={e => { e.preventDefault(); updateField(t.id, 'label', l); }}
+              style={solidPill(t.label === l, labelColors[l])}>{l}</button>
+          ))}
+        </div>
+        {showCategories && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => (
+              <button key={cat} onClick={e => { e.preventDefault(); updateField(t.id, 'category', cat); }}
+                style={solidCatPill(t.category === cat, catColors[cat])}>{cat}</button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
