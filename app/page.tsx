@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Txn, Bill, BudgetIncome, ManualAccount, Category, Label } from './components/types';
-import { fmt, myShare, incomeShare, catColors, labelColors, monthLabel } from './components/constants';
+import { fmt, myShare, incomeShare, catColors, labelColors, monthLabel, today } from './components/constants';
 import BudgetAccount from './components/BudgetAccount';
 
 const IconTxn = () => (
@@ -129,6 +129,8 @@ export default function App() {
   const [filterAccount, setFilterAccount] = useState('All');
   const [filterMonth, setFilterMonth] = useState('All');
   const [showArchive, setShowArchive] = useState(false);
+  const [txnSort, setTxnSort] = useState<'date' | 'amount' | 'merchant'>('date');
+  const [archiveSort, setArchiveSort] = useState<'date' | 'amount' | 'merchant'>('date');
   const [uploadModal, setUploadModal] = useState<{ file: File; source: string } | null>(null);
   const [uploadAccount, setUploadAccount] = useState('');
 
@@ -163,8 +165,8 @@ export default function App() {
     const init = async () => {
       await Promise.all([fetchFromSupabase(), fetchArchived(), fetchManualAccounts(), fetchBudget()]);
       const lastSync = localStorage.getItem('last_plaid_sync');
-const todayStr = new Date().toISOString().split('T')[0];
-if (lastSync !== todayStr) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (lastSync !== todayStr) {
         try { await fetch('/api/transactions'); } catch {}
         localStorage.setItem('last_plaid_sync', todayStr);
         fetchFromSupabase();
@@ -258,14 +260,24 @@ if (lastSync !== todayStr) {
   }), [txns, filterAccount, filterMonth]);
 
   const txnsByMonth = useMemo(() => {
+    const sorted = [...filteredTxns].sort((a, b) => {
+      if (txnSort === 'amount') return b.amount - a.amount;
+      if (txnSort === 'merchant') return a.merchant.localeCompare(b.merchant);
+      return b.date.localeCompare(a.date);
+    });
     const map: Record<string, Txn[]> = {};
-    filteredTxns.forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
+    sorted.forEach(t => { const m = t.date.slice(0, 7); if (!map[m]) map[m] = []; map[m].push(t); });
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filteredTxns]);
+  }, [filteredTxns, txnSort]);
 
-  const filteredArchive = useMemo(() =>
-    archiveSearch.trim() ? archivedTxns.filter(t => t.merchant.toLowerCase().includes(archiveSearch.toLowerCase())) : archivedTxns,
-    [archivedTxns, archiveSearch]);
+  const filteredArchive = useMemo(() => {
+    const base = archiveSearch.trim() ? archivedTxns.filter(t => t.merchant.toLowerCase().includes(archiveSearch.toLowerCase())) : archivedTxns;
+    return [...base].sort((a, b) => {
+      if (archiveSort === 'amount') return b.amount - a.amount;
+      if (archiveSort === 'merchant') return a.merchant.localeCompare(b.merchant);
+      return 0; // default: keep archived_at order from server
+    });
+  }, [archivedTxns, archiveSearch, archiveSort]);
 
   const maddieBills  = bills.filter(b => b.account === 'maddie');
   const maddieIncome = income.filter(p => p.account === 'maddie');
@@ -309,13 +321,20 @@ if (lastSync !== todayStr) {
                     <option value="All">All months</option>
                     {Array.from(new Set(txns.map(t => t.date.slice(0, 7)))).sort((a, b) => b.localeCompare(a)).map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
+                  <select value={txnSort} onChange={e => setTxnSort(e.target.value as any)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', minWidth: 0 }}>
+                    <option value="date">Date</option>
+                    <option value="amount">Amount</option>
+                    <option value="merchant">Merchant</option>
+                  </select>
                 </div>
               </div>
               {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>Loading…</div>}
               {!loading && txns.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: '#aaa' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🏦</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#555' }}>No transactions yet</div>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}>
+                    <circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/>
+                  </svg>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#555' }}>All sorted out!</div>
                 </div>
               )}
               {!loading && txnsByMonth.map(([month, mTxns]) => (
@@ -409,7 +428,12 @@ if (lastSync !== todayStr) {
                   <button onClick={() => setShowArchive(false)} style={{ fontSize: 13, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Done</button>
                 </div>
                 <input placeholder="Search transactions..." value={archiveSearch} onChange={e => setArchiveSearch(e.target.value)}
-                  style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #e0e0e0', borderRadius: 10, background: '#f8f8f8', boxSizing: 'border-box' as const }} />
+                  style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #e0e0e0', borderRadius: 10, background: '#f8f8f8', boxSizing: 'border-box' as const, marginBottom: 8 }} />
+                <select value={archiveSort} onChange={e => setArchiveSort(e.target.value as any)} style={{ width: '100%', fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', boxSizing: 'border-box' as const }}>
+                  <option value="date">Sort by date</option>
+                  <option value="amount">Sort by amount</option>
+                  <option value="merchant">Sort by merchant</option>
+                </select>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 20px', paddingBottom: 40 }}>
                 {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>No archived transactions.</div>}
