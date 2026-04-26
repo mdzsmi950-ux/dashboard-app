@@ -61,7 +61,7 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
   const tabBtn = (t: string) => ({ padding: '5px 12px', borderRadius: 8, border: 'none', background: subtab === t ? '#f0f0f0' : 'transparent', color: subtab === t ? '#000' : '#888', fontSize: 13, cursor: 'pointer', fontWeight: subtab === t ? 500 : 400 });
 
   return (
-    <div style={{ flex: 1, minWidth: 0, border: '0.5px solid #EAE4DC', borderRadius: 12, padding: '1.25rem 1.5rem' }}>
+    <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ fontSize: 15, fontWeight: 500, marginBottom: '1rem' }}>{title}</div>
       {!confirming
         ? <button style={{ ...addBtn, marginBottom: '1rem', fontSize: 12 }} onClick={() => setConfirming(true)}>Confirm balance</button>
