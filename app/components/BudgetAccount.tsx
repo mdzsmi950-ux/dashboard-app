@@ -21,7 +21,6 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
   const [subtab, setSubtab] = useState('overview');
   const [newBill, setNewBill] = useState({ name: '', amount: '', due: '', autopay: false });
   const [newInc, setNewInc] = useState({ date: '', amount: '', label: '' });
-  const [confirming, setConfirming] = useState(false);
   const [confirmVal, setConfirmVal] = useState('');
 
   const sBills = [...bills].sort((a: Bill, b: Bill) => a.due.localeCompare(b.due));
@@ -40,7 +39,7 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
     for (const p of sIncome.filter((p: BudgetIncome) => p.date <= today)) await onDeleteIncome(p.id);
     for (const b of sBills.filter((b: Bill) => b.due <= today && !b.paid)) await onDeleteBill(b.id);
     await onAddIncome({ date: today, amount: amt.toFixed(2), label: 'Confirmed balance' });
-    setConfirming(false); setConfirmVal('');
+    setConfirmVal('');
   };
 
   const cutoff = getCutoff();
@@ -62,14 +61,10 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
 
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 15, fontWeight: 500, marginBottom: '1rem' }}>{title}</div>
-      {!confirming
-        ? <button style={{ ...addBtn, marginBottom: '1rem', fontSize: 12 }} onClick={() => setConfirming(true)}>Confirm balance</button>
-        : <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: '0.75rem' }}>
-            <input type="number" placeholder="Current balance" value={confirmVal} onChange={e => setConfirmVal(e.target.value)} style={{ ...inp, width: 160 }} />
-            <button style={addBtn} onClick={confirmBalance}>Confirm</button>
-            <button style={delBtn} onClick={() => { setConfirming(false); setConfirmVal(''); }}>Cancel</button>
-          </div>}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: '1rem' }}>
+        <input type="number" placeholder="Enter current balance" value={confirmVal} onChange={e => setConfirmVal(e.target.value)} style={{ ...inp, width: 160 }} />
+        <button style={addBtn} onClick={confirmBalance}>Confirm</button>
+      </div>
       <div style={{ display: 'flex', gap: 4, marginBottom: '1rem', borderBottom: '0.5px solid #EAE4DC', paddingBottom: 8 }}>
         {['overview', 'bills', 'income'].map(t => <button key={t} style={tabBtn(t)} onClick={() => setSubtab(t)}>{t[0].toUpperCase() + t.slice(1)}</button>)}
       </div>
