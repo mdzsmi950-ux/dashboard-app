@@ -711,16 +711,16 @@ export default function App() {
 
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: 'rgba(250,247,242,0.97)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '0.5px solid #efefef', paddingBottom: 'env(safe-area-inset-bottom)',
+          background: '#ffffff',
+          borderTop: '0.5px solid #f0f0f0', paddingBottom: 'env(safe-area-inset-bottom)',
           display: 'flex', justifyContent: 'space-evenly', alignItems: 'center',
-          height: TAB_H, zIndex: 100,
+          height: TAB_H, zIndex: 9999,
         }}>
           {TABS.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setTab(id)} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               background: 'none', border: 'none', cursor: 'pointer',
-              color: tab === id ? '#E0C0CE' : theme.textDisabled, padding: '8px 12px',
+              color: tab === id ? '#1a1a1a' : '#ccc', padding: '8px 12px',
             }}>
               <Icon />
               <span style={{ fontSize: 10, fontWeight: tab === id ? 600 : 400 }}>{label}</span>
