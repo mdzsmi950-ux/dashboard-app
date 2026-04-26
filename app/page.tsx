@@ -64,8 +64,6 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
     transition: 'all 0.15s',
   } as const);
 
-  const showCategories = t.label === 'Mine' || t.label === 'Joint';
-
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '0.5px solid #f0f0f0' }}>
       {/* Swipe-to-ignore background */}
@@ -97,20 +95,21 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
             {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginBottom: showCategories ? 8 : 0 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
           {(['Mine', 'Joint'] as Label[]).map(l => (
             <button key={l} onClick={e => { e.preventDefault(); updateField(t.id, 'label', l); }}
               style={solidPill(t.label === l, labelColors[l])}>{l}</button>
           ))}
         </div>
-        {showCategories && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => (
-              <button key={cat} onClick={e => { e.preventDefault(); updateField(t.id, 'category', cat); }}
-                style={solidCatPill(t.category === cat, catColors[cat])}>{cat}</button>
-            ))}
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
+            const disabled = !t.label || t.label === 'Ignore';
+            return (
+              <button key={cat} onClick={e => { e.preventDefault(); if (!disabled) updateField(t.id, 'category', cat); }}
+                style={solidCatPill(!disabled && t.category === cat, catColors[cat])}>{cat}</button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
