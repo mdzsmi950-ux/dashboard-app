@@ -579,7 +579,7 @@ export default function App() {
                 <button onClick={() => { const n = prompt('New account name?'); if (n) setUploadAccount(n); }} style={{
                   padding: '12px 16px', borderRadius: 10, border: uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? '1.5px solid #1a1a1a' : '0.5px dashed #ccc',
                   background: 'white', textAlign: 'left', fontSize: 14, color: '#888', cursor: 'pointer',
-                }}>+ New account{uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ?  : ''}</button>
+                }}>+ New account{uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? `: ${uploadAccount}` : ''}</button>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => setUploadModal(null)} style={{ flex: 1, padding: '13px', borderRadius: 10, border: '0.5px solid #e0e0e0', background: 'white', fontSize: 15, cursor: 'pointer' }}>Cancel</button>
