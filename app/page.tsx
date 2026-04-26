@@ -336,18 +336,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const init = async () => {
-      await Promise.all([fetchFromSupabase(), fetchArchived(), fetchManualAccounts(), fetchBudget()]);
-      const lastSync = localStorage.getItem('last_plaid_sync');
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (lastSync !== todayStr) {
-        try { await fetch('/api/transactions'); } catch {}
-        localStorage.setItem('last_plaid_sync', todayStr);
-        fetchFromSupabase();
-        fetchArchived();
-      }
-    };
-    init();
+    Promise.all([fetchFromSupabase(), fetchArchived(), fetchManualAccounts(), fetchBudget()]);
   }, [fetchBudget, fetchArchived]);
 
   const updateField = async (id: string, field: string, val: any) => {
