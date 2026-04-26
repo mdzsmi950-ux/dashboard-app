@@ -163,7 +163,8 @@ export default function App() {
     const init = async () => {
       await Promise.all([fetchFromSupabase(), fetchArchived(), fetchManualAccounts(), fetchBudget()]);
       const lastSync = localStorage.getItem('last_plaid_sync');
-      if (lastSync !== todayStr) {
+const todayStr = new Date().toISOString().split('T')[0];
+if (lastSync !== todayStr) {
         try { await fetch('/api/transactions'); } catch {}
         localStorage.setItem('last_plaid_sync', todayStr);
         fetchFromSupabase();
