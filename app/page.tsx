@@ -493,7 +493,7 @@ export default function App() {
   const jointBills   = bills.filter(b => b.account === 'joint');
   const jointIncome  = income.filter(p => p.account === 'joint');
 
-  const TAB_H = 72;
+  const TAB_H = 52;
 
   return (
     <>
