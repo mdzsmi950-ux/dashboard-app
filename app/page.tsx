@@ -361,7 +361,30 @@ export default function App() {
               <div style={{ padding: '0 20px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
-
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <label style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
+                      Chase CSV
+                      <input type="file" accept=".csv" style={{ display: 'none' }} onChange={async e => {
+                        const file = e.target.files?.[0]; if (!file) return;
+                        const csv = await file.text();
+                        const r = await fetch('/api/transactions/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv, source: 'chase' }) }).then(r => r.json());
+                        alert(`Inserted: ${r.inserted}, Skipped: ${r.skipped}`);
+                        fetchFromSupabase(); fetchArchived();
+                        e.target.value = '';
+                      }} />
+                    </label>
+                    <label style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
+                      Amex CSV
+                      <input type="file" accept=".csv" style={{ display: 'none' }} onChange={async e => {
+                        const file = e.target.files?.[0]; if (!file) return;
+                        const csv = await file.text();
+                        const r = await fetch('/api/transactions/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv, source: 'amex' }) }).then(r => r.json());
+                        alert(`Inserted: ${r.inserted}, Skipped: ${r.skipped}`);
+                        fetchFromSupabase(); fetchArchived();
+                        e.target.value = '';
+                      }} />
+                    </label>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #e0e0e0', borderRadius: 8, background: '#f8f8f8', minWidth: 0 }}>
