@@ -47,7 +47,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
   const ready = swipeX >= threshold;
 
   const solidPill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
-    fontSize: 11, padding: '4px 12px', borderRadius: 20, cursor: 'pointer',
+    fontSize: 11, padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
     border: `0.5px solid ${active ? colors.border : '#e8e8e8'}`,
     background: active ? colors.color : 'transparent',
     color: active ? 'white' : '#bbb',
@@ -56,7 +56,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
   } as const);
 
   const solidCatPill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
-    fontSize: 11, padding: '4px 12px', borderRadius: 20, cursor: 'pointer',
+    fontSize: 11, padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
     border: `0.5px solid ${active ? colors.color : '#e8e8e8'}`,
     background: active ? colors.color : 'transparent',
     color: active ? 'white' : '#bbb',
@@ -76,7 +76,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
         <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>Ignore</span>
       </div>
       <div
-        style={{ padding: '14px 0', background: '#fff', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
+        style={{ padding: '10px 0', background: '#fff', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
         onTouchStart={e => { startX.current = e.touches[0].clientX; setSwipeX(0); }}
         onTouchMove={e => { if (startX.current === null) return; const dx = e.touches[0].clientX - startX.current; if (dx > 0) setSwipeX(dx); }}
         onTouchEnd={e => {
@@ -86,7 +86,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
           setSwipeX(0); startX.current = null;
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
           <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
             <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
@@ -95,13 +95,13 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
             {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 5, marginBottom: 5 }}>
           {(['Mine', 'Joint'] as Label[]).map(l => (
             <button key={l} onClick={e => { e.preventDefault(); updateField(t.id, 'label', l); }}
               style={solidPill(t.label === l, labelColors[l])}>{l}</button>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
           {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
             const disabled = !t.label || t.label === 'Ignore';
             return (
@@ -251,7 +251,7 @@ export default function App() {
   const [manualAccountsDb, setManualAccountsDb] = useState<ManualAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('transactions');
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [budgetSubtab, setBudgetSubtab] = useState<'maddie' | 'joint'>('maddie');
   const [archiveSearch, setArchiveSearch] = useState('');
   const [filterAccount, setFilterAccount] = useState('All');
@@ -470,9 +470,15 @@ export default function App() {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => setShowArchive(true)} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>Archive</button>
-                    <label style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
-                      + CSV
+                    <button onClick={() => setShowArchive(true)} style={{ padding: '7px 10px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8"/><line x1="10" y1="13" x2="14" y2="13"/>
+                      </svg>
+                    </button>
+                    <label style={{ padding: '7px 10px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
                       <input type="file" accept=".csv" style={{ display: 'none' }} onChange={e => {
                         const file = e.target.files?.[0]; if (!file) return;
                         const name = file.name.toLowerCase();
