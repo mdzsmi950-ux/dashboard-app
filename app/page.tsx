@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Txn, Bill, BudgetIncome, ManualAccount, Category, Label } from './components/types';
-import { fmt, myShare, incomeShare, catColors, labelColors, monthLabel, today } from './components/constants';
+import { fmt, myShare, incomeShare, catColors, labelColors, monthLabel, today, theme } from './components/constants';
 import BudgetAccount from './components/BudgetAccount';
 
 const IconTxn = () => (
@@ -33,9 +33,9 @@ const isCompleteForArchive = (t: Txn) =>
 
 const pill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
   fontSize: 11, padding: '3px 8px', borderRadius: 20, cursor: 'pointer',
-  border: `0.5px solid ${active ? colors.border : '#e8e8e8'}`,
+  border: `0.5px solid ${active ? colors.border : theme.pillBorder}`,
   background: active ? colors.bg : 'transparent',
-  color: active ? colors.color : '#bbb',
+  color: active ? colors.color : theme.textDisabled,
   fontWeight: active ? 500 : 400,
 } as const);
 
@@ -48,28 +48,28 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
 
   const solidPill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
     fontSize: 11, padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
-    border: `0.5px solid ${active ? colors.border : '#e8e8e8'}`,
+    border: `0.5px solid ${active ? colors.border : theme.pillBorder}`,
     background: active ? colors.bg : 'transparent',
-    color: active ? colors.color : '#bbb',
+    color: active ? colors.color : theme.textDisabled,
     fontWeight: active ? 600 : 400,
     transition: 'all 0.15s',
   } as const);
 
   const solidCatPill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
     fontSize: 11, padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
-    border: `0.5px solid ${active ? colors.border : '#e8e8e8'}`,
+    border: `0.5px solid ${active ? colors.border : theme.pillBorder}`,
     background: active ? colors.bg : 'transparent',
-    color: active ? colors.color : '#bbb',
+    color: active ? colors.color : theme.textDisabled,
     fontWeight: active ? 600 : 400,
     transition: 'all 0.15s',
   } as const);
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '0.5px solid #E8E2D8' }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: `0.5px solid ${theme.divider}` }}>
       {/* Swipe-to-ignore background */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: ready ? '#aaa' : '#bbb',
+        background: ready ? '#aaa' : theme.textDisabled,
         display: 'flex', alignItems: 'center', paddingLeft: 20,
         opacity: swiping ? 1 : 0, transition: 'background 0.15s',
       }}>
@@ -88,10 +88,10 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
           <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
-            <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: theme.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
+            <div style={{ fontSize: 11, color: theme.textFaint, marginTop: 2 }}>{t.date.slice(5)}{t.account ? ` · ${t.account}` : ''}</div>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? '#3A6B4A' : '#1a1a1a', flexShrink: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: t.amount < 0 ? theme.income : '#1a1a1a', flexShrink: 0 }}>
             {t.amount < 0 ? '+' : ''}{fmt(t.amount)}
           </div>
         </div>
@@ -123,7 +123,7 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
   const ready = swipeX >= threshold;
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '0.5px solid #E8E2D8' }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: `0.5px solid ${theme.divider}` }}>
       <div style={{
         position: 'absolute', inset: 0, background: ready ? '#8B4060' : '#E0C0CE',
         display: 'flex', alignItems: 'center', paddingLeft: 20,
@@ -142,15 +142,15 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ minWidth: 0, flex: 1, marginRight: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: theme.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.merchant}</div>
             <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
               {t.label && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: labelColors[t.label].bg, color: labelColors[t.label].color }}>{t.label}</span>}
               {t.category && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 20, background: catColors[t.category].bg, color: catColors[t.category].color }}>{t.category}</span>}
             </div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? '#3A6B4A' : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
-            <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{t.date.slice(5)}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: t.amount < 0 ? theme.income : '#1a1a1a' }}>{t.amount < 0 ? '+' : ''}{fmt(t.amount)}</div>
+            <div style={{ fontSize: 11, color: theme.textFaint, marginTop: 2 }}>{t.date.slice(5)}</div>
           </div>
         </div>
       </div>
@@ -164,7 +164,7 @@ function PieChart({ needs, wants, impulse }: { needs: number; wants: number; imp
 
   const cx = 80, cy = 80, r = 70;
   const slices = [
-    { value: needs,   color: '#3A6B4A', label: 'Needs' },
+    { value: needs,   color: theme.income, label: 'Needs' },
     { value: wants,   color: '#8B4060', label: 'Wants' },
     { value: impulse, color: '#E0C0CE', label: 'Impulse' },
   ].filter(s => s.value > 0);
@@ -192,8 +192,8 @@ function PieChart({ needs, wants, impulse }: { needs: number; wants: number; imp
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 10, height: 10, borderRadius: 3, background: p.color, flexShrink: 0 }}/>
             <div>
-              <div style={{ fontSize: 12, color: '#555', fontWeight: 500 }}>{p.label}</div>
-              <div style={{ fontSize: 11, color: '#aaa' }}>{p.pct}% · ${p.value.toFixed(0)}</div>
+              <div style={{ fontSize: 12, color: theme.textMid, fontWeight: 500 }}>{p.label}</div>
+              <div style={{ fontSize: 11, color: theme.textFaint }}>{p.pct}% · ${p.value.toFixed(0)}</div>
             </div>
           </div>
         ))}
@@ -498,7 +498,7 @@ export default function App() {
   return (
     <>
       <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async />
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', overflowX: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: theme.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', overflowX: 'hidden' }}>
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
 
           {tab === 'transactions' && (
@@ -506,7 +506,7 @@ export default function App() {
               <div style={{ padding: '0 20px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: theme.text }}>Transactions</div>
                     {txns.filter(t => !t.label).length > 0 && (
                       <div style={{ fontSize: 12, color: '#E0C0CE', marginTop: 2 }}>
                         {txns.filter(t => !t.label).length} to review
@@ -514,12 +514,12 @@ export default function App() {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => setShowArchive(true)} style={{ padding: '7px 10px', borderRadius: 20, border: '0.5px solid #CFC9BC', background: '#ffffff', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                    <button onClick={() => setShowArchive(true)} style={{ padding: '7px 10px', borderRadius: 20, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: theme.textMid, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                         <rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8"/><line x1="10" y1="13" x2="14" y2="13"/>
                       </svg>
                     </button>
-                    <label style={{ padding: '7px 10px', borderRadius: 20, border: '0.5px solid #CFC9BC', background: '#ffffff', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                    <label style={{ padding: '7px 10px', borderRadius: 20, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: theme.textMid, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                       </svg>
@@ -535,35 +535,35 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #CFC9BC', borderRadius: 8, background: '#f5f5f5', minWidth: 0 }}>
+                  <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, minWidth: 0 }}>
                     <option value="All">All accounts</option>
                     {accountOptions.map(a => <option key={a} value={a}>{a}</option>)}
                   </select>
-                  <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #CFC9BC', borderRadius: 8, background: '#f5f5f5', minWidth: 0 }}>
+                  <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, minWidth: 0 }}>
                     <option value="All">All months</option>
                     {Array.from(new Set(txns.map(t => t.date.slice(0, 7)))).sort((a, b) => b.localeCompare(a)).map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
-                  <select value={txnSort} onChange={e => setTxnSort(e.target.value as any)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: '0.5px solid #CFC9BC', borderRadius: 8, background: '#f5f5f5', minWidth: 0 }}>
+                  <select value={txnSort} onChange={e => setTxnSort(e.target.value as any)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, minWidth: 0 }}>
                     <option value="date">Date</option>
                     <option value="amount">Amount</option>
                     <option value="merchant">Merchant</option>
                   </select>
                 </div>
               </div>
-              {loading && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>Loading…</div>}
+              {loading && <div style={{ textAlign: 'center', padding: '40px', color: theme.textFaint, fontSize: 13 }}>Loading…</div>}
               {!loading && txns.length === 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 20px', color: '#aaa' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 20px', color: theme.textFaint }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#B8D4C0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}>
                     <circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/>
                   </svg>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#555' }}>All sorted out!</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: theme.textMid }}>All sorted out!</div>
                 </div>
               )}
               {!loading && txnsByMonth.map(([month, mTxns]) => (
                 <div key={month} style={{ marginBottom: 8 }}>
                   <div style={{ padding: '8px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>{monthLabel(month)}</div>
-                    <span style={{ fontSize: 12, color: '#aaa' }}>{fmt(mTxns.reduce((s, t) => s + myShare(t), 0))}</span>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.textMid }}>{monthLabel(month)}</div>
+                    <span style={{ fontSize: 12, color: theme.textFaint }}>{fmt(mTxns.reduce((s, t) => s + myShare(t), 0))}</span>
                   </div>
                   <div style={{ padding: '0 20px' }}>
                     {mTxns.map(t => <TxnCard key={t.id} t={t} updateField={updateField} />)}
@@ -576,13 +576,13 @@ export default function App() {
           {tab === 'budget' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
               <div style={{ padding: '0 20px', marginBottom: 20 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 20 }}>Budget</div>
-                <div style={{ display: 'flex', background: '#f5f5f5', borderRadius: 10, padding: 3 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: theme.text, marginBottom: 20 }}>Budget</div>
+                <div style={{ display: 'flex', background: theme.bgSubtle, borderRadius: 10, padding: 3 }}>
                   {(['maddie', 'joint'] as const).map(sub => (
                     <button key={sub} onClick={() => setBudgetSubtab(sub)} style={{
                       flex: 1, padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13,
-                      background: budgetSubtab === sub ? '#ffffff' : 'transparent',
-                      color: budgetSubtab === sub ? '#1a1a1a' : '#888',
+                      background: budgetSubtab === sub ? theme.bg : 'transparent',
+                      color: budgetSubtab === sub ? theme.text : theme.textSubtle,
                       fontWeight: budgetSubtab === sub ? 600 : 400,
                       boxShadow: budgetSubtab === sub ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                     }}>{sub === 'maddie' ? 'Maddie' : 'Joint'}</button>
@@ -598,18 +598,18 @@ export default function App() {
 
           {tab === 'summary' && (
             <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden' }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 20 }}>Summary</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: theme.text, marginBottom: 20 }}>Summary</div>
 
               {/* 1. YTD Income + Spending */}
-              <div style={{ fontSize: 10, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Year to Date</div>
+              <div style={{ fontSize: 10, color: theme.textFaint, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Year to Date</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: '#3A6B4A', marginBottom: 4 }}>Income</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: '#3A6B4A' }}>{fmt(ytdStats.income)}</div>
+                  <div style={{ fontSize: 10, color: theme.income, marginBottom: 4 }}>Income</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: theme.income }}>{fmt(ytdStats.income)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Spending</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>{fmt(ytdStats.total)}</div>
+                  <div style={{ fontSize: 10, color: theme.textFaint, marginBottom: 4 }}>Spending</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: theme.text }}>{fmt(ytdStats.total)}</div>
                 </div>
               </div>
 
@@ -617,32 +617,32 @@ export default function App() {
               <PieChart needs={ytdStats.needs} wants={ytdStats.wants} impulse={ytdStats.impulse} />
 
               {/* 3 + 4. Monthly breakdown + chart */}
-              <div style={{ borderTop: '0.5px solid #E8E2D8', paddingTop: 20 }}>
+              <div style={{ borderTop: `0.5px solid ${theme.divider}`, paddingTop: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <div style={{ fontSize: 10, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly</div>
-                  <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ fontSize: 13, padding: '6px 10px', border: '0.5px solid #CFC9BC', borderRadius: 8, background: '#ffffff', color: '#1a1a1a' }}>
+                  <div style={{ fontSize: 10, color: theme.textFaint, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly</div>
+                  <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ fontSize: 13, padding: '6px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bg, color: theme.text }}>
                     {availableMonths.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
                   <div>
-                    <div style={{ fontSize: 10, color: '#3A6B4A', marginBottom: 4 }}>Income</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#3A6B4A' }}>{fmt(monthlyStats.income)}</div>
+                    <div style={{ fontSize: 10, color: theme.income, marginBottom: 4 }}>Income</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: theme.income }}>{fmt(monthlyStats.income)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>Spending</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>{fmt(monthlyStats.total)}</div>
+                    <div style={{ fontSize: 10, color: theme.textFaint, marginBottom: 4 }}>Spending</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: theme.text }}>{fmt(monthlyStats.total)}</div>
                   </div>
                 </div>
                 <SpendingChart data={chartData} />
                 <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <div style={{ width: 16, height: 2, background: '#B8D4C0', borderRadius: 1 }}/>
-                    <span style={{ fontSize: 10, color: '#aaa' }}>{monthLabel(chartData.curMonth)}</span>
+                    <span style={{ fontSize: 10, color: theme.textFaint }}>{monthLabel(chartData.curMonth)}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <div style={{ width: 16, height: 2, background: '#E0C0CE', borderRadius: 1 }}/>
-                    <span style={{ fontSize: 10, color: '#aaa' }}>{monthLabel(chartData.lastMonth)}</span>
+                    <span style={{ fontSize: 10, color: theme.textFaint }}>{monthLabel(chartData.lastMonth)}</span>
                   </div>
                 </div>
               </div>
@@ -650,22 +650,22 @@ export default function App() {
           )}
 
           {showArchive && (
-            <div style={{ position: 'fixed', inset: 0, background: '#ffffff', zIndex: 150, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', marginBottom: 12, borderBottom: '0.5px solid #E8E2D8', paddingBottom: 12 }}>
+            <div style={{ position: 'fixed', inset: 0, background: theme.bg, zIndex: 150, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', marginBottom: 12, borderBottom: `0.5px solid ${theme.divider}`, paddingBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Archive</div>
-                  <button onClick={() => setShowArchive(false)} style={{ fontSize: 13, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #CFC9BC', background: '#ffffff', color: '#555', cursor: 'pointer' }}>Done</button>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: theme.text }}>Archive</div>
+                  <button onClick={() => setShowArchive(false)} style={{ fontSize: 13, padding: '7px 14px', borderRadius: 20, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: theme.textMid, cursor: 'pointer' }}>Done</button>
                 </div>
                 <input placeholder="Search transactions..." value={archiveSearch} onChange={e => setArchiveSearch(e.target.value)}
-                  style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: '0.5px solid #CFC9BC', borderRadius: 10, background: '#f5f5f5', boxSizing: 'border-box' as const, marginBottom: 8 }} />
-                <select value={archiveSort} onChange={e => setArchiveSort(e.target.value as any)} style={{ width: '100%', fontSize: 12, padding: '7px 10px', border: '0.5px solid #CFC9BC', borderRadius: 8, background: '#f5f5f5', boxSizing: 'border-box' as const }}>
+                  style={{ width: '100%', fontSize: 14, padding: '10px 14px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 10, background: theme.bgSubtle, boxSizing: 'border-box' as const, marginBottom: 8 }} />
+                <select value={archiveSort} onChange={e => setArchiveSort(e.target.value as any)} style={{ width: '100%', fontSize: 12, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, boxSizing: 'border-box' as const }}>
                   <option value="date">Sort by recent</option>
                   <option value="amount">Sort by amount</option>
                   <option value="merchant">Sort by merchant</option>
                 </select>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 20px', paddingBottom: 40 }}>
-                {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: '#aaa', fontSize: 13 }}>No archived transactions.</div>}
+                {filteredArchive.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: theme.textFaint, fontSize: 13 }}>No archived transactions.</div>}
                 {filteredArchive.map(t => <ArchiveCard key={t.id} t={t} onRecover={t => { recoverTxn(t); }} />)}
               </div>
             </div>
@@ -675,26 +675,26 @@ export default function App() {
 
         {uploadModal && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
-            <div style={{ background: '#ffffff', width: '100%', borderRadius: '16px 16px 0 0', padding: '24px 20px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
+            <div style={{ background: theme.bg, width: '100%', borderRadius: '16px 16px 0 0', padding: '24px 20px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
               <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 6 }}>Upload {uploadModal.source === 'amex' ? 'Amex' : 'Chase'} CSV</div>
-              <div style={{ fontSize: 13, color: '#aaa', marginBottom: 20 }}>Select account to import into</div>
+              <div style={{ fontSize: 13, color: theme.textFaint, marginBottom: 20 }}>Select account to import into</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                 {manualAccountsDb.map(a => (
                   <button key={a.id} onClick={() => setUploadAccount(a.name)} style={{
                     padding: '12px 16px', borderRadius: 10, textAlign: 'left', fontSize: 14, cursor: 'pointer',
-                    border: uploadAccount === a.name ? '1.5px solid #1a1a1a' : '0.5px solid #e0e0e0',
+                    border: uploadAccount === a.name ? '1.5px solid #1a1a1a' : `0.5px solid ${theme.borderMid}`,
                     background: uploadAccount === a.name ? '#F0EBE3' : '#ffffff',
                     fontWeight: uploadAccount === a.name ? 600 : 400,
                   }}>{a.name}</button>
                 ))}
                 <button onClick={() => { const n = prompt('New account name?'); if (n) setUploadAccount(n); }} style={{
-                  padding: '12px 16px', borderRadius: 10, textAlign: 'left', fontSize: 14, color: '#aaa', cursor: 'pointer',
+                  padding: '12px 16px', borderRadius: 10, textAlign: 'left', fontSize: 14, color: theme.textFaint, cursor: 'pointer',
                   border: uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? '1.5px solid #1a1a1a' : '0.5px dashed #ccc',
-                  background: '#ffffff',
+                  background: theme.bg,
                 }}>+ New account{uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? `: ${uploadAccount}` : ''}</button>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setUploadModal(null)} style={{ flex: 1, padding: '13px', borderRadius: 10, border: '0.5px solid #CFC9BC', background: '#ffffff', fontSize: 15, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => setUploadModal(null)} style={{ flex: 1, padding: '13px', borderRadius: 10, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, fontSize: 15, cursor: 'pointer' }}>Cancel</button>
                 <button disabled={!uploadAccount} onClick={async () => {
                   const csv = await uploadModal.file.text();
                   const r = await fetch('/api/transactions/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv, source: uploadModal.source, accountName: uploadAccount }) }).then(r => r.json());
@@ -720,7 +720,7 @@ export default function App() {
             <button key={id} onClick={() => setTab(id)} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               background: 'none', border: 'none', cursor: 'pointer',
-              color: tab === id ? '#E0C0CE' : '#bbb', padding: '8px 12px',
+              color: tab === id ? '#E0C0CE' : theme.textDisabled, padding: '8px 12px',
             }}>
               <Icon />
               <span style={{ fontSize: 10, fontWeight: tab === id ? 600 : 400 }}>{label}</span>

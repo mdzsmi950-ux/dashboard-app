@@ -36,3 +36,23 @@ export const incomeShare = (t: Txn) => {
 export const inp = { padding: '6px 10px', borderRadius: 8, border: '0.5px solid #CFC9BC', background: '#FDFAF6', color: '#1a1a1a', fontSize: 13, width: '100%', boxSizing: 'border-box' as const };
 export const addBtn = { padding: '6px 12px', borderRadius: 8, border: '0.5px solid #CFC9BC', background: '#EDEBE6', color: '#1a1a1a', fontSize: 13, cursor: 'pointer' };
 export const delBtn = { padding: '2px 8px', borderRadius: 8, border: 'none', background: 'transparent', color: '#8B4060', fontSize: 12, cursor: 'pointer' };
+
+// ─── Central theme — import this everywhere instead of hardcoding ───────────
+export const theme = {
+  bg:          '#ffffff',   // page background
+  bgSubtle:    '#f5f5f5',   // inputs, selects, subtle areas
+  border:      '#e8e8e8',   // default borders
+  borderMid:   '#e0e0e0',   // slightly stronger borders
+  text:        '#1a1a1a',   // primary text
+  textMid:     '#555',      // secondary text
+  textSubtle:  '#888',      // tertiary text
+  textFaint:   '#aaa',      // very faint text/placeholders
+  textDisabled:'#bbb',      // disabled pills
+  income:      '#3A6B4A',   // income green (from Needs/Mine)
+  positive:    '#3A6B4A',   // positive amounts
+  tabActive:   '#1a1a1a',   // active tab
+  tabInactive: '#bbb',      // inactive tab
+  pillBorder:  '#e8e8e8',   // unselected pill border
+  divider:     '#f0f0f0',   // list dividers
+  cardBg:      '#ffffff',   // card/overlay background
+};
