@@ -48,18 +48,18 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
 
   const solidPill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
     fontSize: 11, padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
-    border: `0.5px solid ${active ? colors.border : '#e8e8e8'}`,
-    background: active ? colors.color : 'transparent',
-    color: active ? 'white' : '#bbb',
+    border: `0.5px solid ${active ? colors.border : '#D8D2C8'}`,
+    background: active ? colors.bg : 'transparent',
+    color: active ? colors.color : '#B0A49A',
     fontWeight: active ? 600 : 400,
     transition: 'all 0.15s',
   } as const);
 
   const solidCatPill = (active: boolean, colors: { bg: string; border: string; color: string }) => ({
     fontSize: 11, padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
-    border: `0.5px solid ${active ? colors.color : '#e8e8e8'}`,
-    background: active ? colors.color : 'transparent',
-    color: active ? 'white' : '#bbb',
+    border: `0.5px solid ${active ? colors.border : '#D8D2C8'}`,
+    background: active ? colors.bg : 'transparent',
+    color: active ? colors.color : '#B0A49A',
     fontWeight: active ? 600 : 400,
     transition: 'all 0.15s',
   } as const);
