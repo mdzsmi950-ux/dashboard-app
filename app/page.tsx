@@ -713,7 +713,7 @@ export default function App() {
           background: theme.bg,
           borderTop: `0.5px solid ${theme.divider}`,
           display: 'flex', justifyContent: 'space-evenly', alignItems: 'center',
-          flexShrink: 0, minHeight: TAB_H,
+          flexShrink: 0, height: TAB_H,
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}>
           {TABS.map(({ id, label, Icon }) => (
