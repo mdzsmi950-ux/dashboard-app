@@ -61,16 +61,16 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
   const tabBtn = (t: string) => ({ padding: '5px 12px', borderRadius: 8, border: 'none', background: subtab === t ? '#f0f0f0' : 'transparent', color: subtab === t ? '#000' : '#888', fontSize: 13, cursor: 'pointer', fontWeight: subtab === t ? 500 : 400 });
 
   return (
-    <div style={{ flex: 1, minWidth: 0, border: '0.5px solid #eee', borderRadius: 12, padding: '1rem 1.25rem' }}>
-      <div style={{ fontSize: 15, fontWeight: 500, marginBottom: '0.75rem' }}>{title}</div>
+    <div style={{ flex: 1, minWidth: 0, border: '0.5px solid #EAE4DC', borderRadius: 12, padding: '1.25rem 1.5rem' }}>
+      <div style={{ fontSize: 15, fontWeight: 500, marginBottom: '1rem' }}>{title}</div>
       {!confirming
-        ? <button style={{ ...addBtn, marginBottom: '0.75rem', fontSize: 12 }} onClick={() => setConfirming(true)}>Confirm balance</button>
+        ? <button style={{ ...addBtn, marginBottom: '1rem', fontSize: 12 }} onClick={() => setConfirming(true)}>Confirm balance</button>
         : <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: '0.75rem' }}>
             <input type="number" placeholder="Current balance" value={confirmVal} onChange={e => setConfirmVal(e.target.value)} style={{ ...inp, width: 160 }} />
             <button style={addBtn} onClick={confirmBalance}>Confirm</button>
             <button style={delBtn} onClick={() => { setConfirming(false); setConfirmVal(''); }}>Cancel</button>
           </div>}
-      <div style={{ display: 'flex', gap: 4, marginBottom: '0.75rem', borderBottom: '0.5px solid #eee', paddingBottom: 6 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: '1rem', borderBottom: '0.5px solid #EAE4DC', paddingBottom: 8 }}>
         {['overview', 'bills', 'income'].map(t => <button key={t} style={tabBtn(t)} onClick={() => setSubtab(t)}>{t[0].toUpperCase() + t.slice(1)}</button>)}
       </div>
 
@@ -78,8 +78,8 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
         <div>
           {groups().length === 0 && <p style={{ fontSize: 13, color: '#888' }}>No income entries yet.</p>}
           {groups().map((g: any, i: number) => (
-            <div key={i} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '0.5px solid #eee' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <div key={i} style={{ marginBottom: 14, paddingBottom: 14, borderBottom: '0.5px solid #EAE4DC' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                 {(() => {
                 const actual = g.pay.label === 'Paycheck' ? findPaycheck(g.pay.date) : null;
                 const displayAmt = actual ? Math.abs(actual.amount) : g.income;
@@ -91,13 +91,13 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
                   </span>
                 );
               })()}
-                <span style={{ fontSize: 12, fontWeight: 500, color: g.balance >= 0 ? '#3A6850' : '#b04040' }}>balance: {fmtSigned(g.balance)}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: g.balance >= 0 ? '#2A8A8A' : '#C04830' }}>balance: {fmtSigned(g.balance)}</span>
               </div>
               {g.bills.length === 0
                 ? <div style={{ fontSize: 12, color: '#aaa' }}>No bills this period</div>
                 : g.bills.map((b: Bill) => (
-                  <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 80px', gap: 6, alignItems: 'center', padding: '3px 0' }}>
-                    <span style={{ fontSize: 13, color: b.paid ? '#aaa' : '#000', textDecoration: b.paid ? 'line-through' : 'none' }}>{b.name}</span>
+                  <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 90px', gap: 10, alignItems: 'center', padding: '8px 0' }}>
+                    <span style={{ fontSize: 13, color: b.paid ? '#B0A49A' : '#3A3530', textDecoration: b.paid ? 'line-through' : 'none' }}>{b.name}</span>
                     <span style={{ fontSize: 12, color: '#888', textAlign: 'right' }}>{labelDate(b.due)}</span>
                     <span style={{ fontSize: 13, fontWeight: 500, textAlign: 'right' }}>{fmt(parseFloat(b.amount || '0'))}</span>
                   </div>
@@ -116,7 +116,7 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
           </div>
           <button style={{ ...addBtn, marginBottom: '0.75rem' }} onClick={() => { onAddBill(newBill); setNewBill({ name: '', amount: '', due: '', autopay: false }); }}>+ Add bill</button>
           {sBills.map((b: Bill) => (
-            <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '20px 1fr 70px 80px 24px', gap: 6, alignItems: 'center', padding: '6px 0', borderTop: '0.5px solid #eee' }}>
+            <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '20px 1fr 60px 90px 24px', gap: 10, alignItems: 'center', padding: '8px 0', borderTop: '0.5px solid #EAE4DC' }}>
               {b.autopay ? <span style={{ fontSize: 11, color: '#aaa' }}>—</span> : <input type="checkbox" checked={b.paid} onChange={() => onTogglePaid(b.id)} style={{ cursor: 'pointer' }} />}
               <div>
                 <div style={{ fontSize: 13, fontWeight: 500, textDecoration: b.paid ? 'line-through' : 'none', color: b.paid ? '#aaa' : '#000' }}>{b.name}</div>
@@ -139,7 +139,7 @@ export default function BudgetAccount({ title, bills, income, txns = [], onToggl
           <input style={{ ...inp, marginBottom: 6 }} placeholder="Label (e.g. Paycheck)" value={newInc.label} onChange={e => setNewInc({ ...newInc, label: e.target.value })} />
           <button style={{ ...addBtn, marginBottom: '0.75rem' }} onClick={() => { onAddIncome(newInc); setNewInc({ date: '', amount: '', label: '' }); }}>+ Add</button>
           {sIncome.map((p: BudgetIncome) => (
-            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderTop: '0.5px solid #eee' }}>
+            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: '0.5px solid #EAE4DC' }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 500 }}>{p.label}</div>
                 <div style={{ fontSize: 11, color: '#aaa' }}>{labelDate(p.date)}</div>

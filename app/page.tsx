@@ -76,7 +76,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
         <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>Ignore</span>
       </div>
       <div
-        style={{ padding: '12px 0', background: '#FAF7F2', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
+        style={{ padding: '12px 0', background: 'transparent', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
         onTouchStart={e => { startX.current = e.touches[0].clientX; setSwipeX(0); }}
         onTouchMove={e => { if (startX.current === null) return; const dx = e.touches[0].clientX - startX.current; if (dx > 0) setSwipeX(dx); }}
         onTouchEnd={e => {
@@ -132,7 +132,7 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
         <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>↩ Recover</span>
       </div>
       <div
-        style={{ padding: '12px 0', background: '#FAF7F2', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
+        style={{ padding: '12px 0', background: 'transparent', transform: `translateX(${Math.min(swipeX, threshold + 20)}px)`, transition: swiping ? 'none' : 'transform 0.2s' }}
         onTouchStart={e => { startX.current = e.touches[0].clientX; setSwipeX(0); }}
         onTouchMove={e => { if (startX.current === null) return; const dx = e.touches[0].clientX - startX.current; if (dx > 0) setSwipeX(dx); }}
         onTouchEnd={e => {
@@ -575,8 +575,8 @@ export default function App() {
 
           {tab === 'budget' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
-              <div style={{ padding: '0 20px', marginBottom: 16 }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#3A3530', marginBottom: 16 }}>Budget</div>
+              <div style={{ padding: '0 20px', marginBottom: 20 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#3A3530', marginBottom: 20 }}>Budget</div>
                 <div style={{ display: 'flex', background: '#F0EBE3', borderRadius: 10, padding: 3 }}>
                   {(['maddie', 'joint'] as const).map(sub => (
                     <button key={sub} onClick={() => setBudgetSubtab(sub)} style={{
@@ -584,7 +584,7 @@ export default function App() {
                       background: budgetSubtab === sub ? '#FAF7F2' : 'transparent',
                       color: budgetSubtab === sub ? '#1a1a1a' : '#888',
                       fontWeight: budgetSubtab === sub ? 600 : 400,
-                      boxShadow: budgetSubtab === sub ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      boxShadow: budgetSubtab === sub ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                     }}>{sub === 'maddie' ? 'Maddie' : 'Joint'}</button>
                   ))}
                 </div>
@@ -683,7 +683,7 @@ export default function App() {
                   <button key={a.id} onClick={() => setUploadAccount(a.name)} style={{
                     padding: '12px 16px', borderRadius: 10, textAlign: 'left', fontSize: 14, cursor: 'pointer',
                     border: uploadAccount === a.name ? '1.5px solid #1a1a1a' : '0.5px solid #e0e0e0',
-                    background: uploadAccount === a.name ? '#f5f5f5' : 'white',
+                    background: uploadAccount === a.name ? '#F0EBE3' : '#FAF7F2',
                     fontWeight: uploadAccount === a.name ? 600 : 400,
                   }}>{a.name}</button>
                 ))}
@@ -711,7 +711,7 @@ export default function App() {
 
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: 'rgba(250,247,242,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+          background: 'rgba(250,247,242,0.97)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
           borderTop: '0.5px solid #efefef', paddingBottom: 'env(safe-area-inset-bottom)',
           display: 'flex', justifyContent: 'space-evenly', alignItems: 'center',
           height: TAB_H, zIndex: 100,
