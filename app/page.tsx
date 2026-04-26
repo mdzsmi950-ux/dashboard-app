@@ -149,6 +149,8 @@ export default function App() {
   const [archiveSearch, setArchiveSearch] = useState('');
   const [filterAccount, setFilterAccount] = useState('All');
   const [filterMonth, setFilterMonth] = useState('All');
+  const [uploadModal, setUploadModal] = useState<{ file: File; source: string } | null>(null);
+  const [uploadAccount, setUploadAccount] = useState('');
 
   useEffect(() => {
     try {
@@ -363,22 +365,14 @@ export default function App() {
                   <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Transactions</div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <label style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
-                      Chase CSV
+                      + CSV
                       <input type="file" accept=".csv" style={{ display: 'none' }} onChange={async e => {
                         const file = e.target.files?.[0]; if (!file) return;
+                        const accountName = prompt('Account name for these transactions? (e.g. Amex Blue, Chase Sapphire)');
+                        if (!accountName) return;
+                        const source = prompt('Bank? Type chase or amex')?.toLowerCase() || 'chase';
                         const csv = await file.text();
-                        const r = await fetch('/api/transactions/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv, source: 'chase' }) }).then(r => r.json());
-                        alert(`Inserted: ${r.inserted}, Skipped: ${r.skipped}`);
-                        fetchFromSupabase(); fetchArchived();
-                        e.target.value = '';
-                      }} />
-                    </label>
-                    <label style={{ fontSize: 12, padding: '7px 14px', borderRadius: 20, border: '0.5px solid #e0e0e0', background: 'white', color: '#555', cursor: 'pointer' }}>
-                      Amex CSV
-                      <input type="file" accept=".csv" style={{ display: 'none' }} onChange={async e => {
-                        const file = e.target.files?.[0]; if (!file) return;
-                        const csv = await file.text();
-                        const r = await fetch('/api/transactions/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv, source: 'amex' }) }).then(r => r.json());
+                        const r = await fetch('/api/transactions/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv, source, accountName }) }).then(r => r.json());
                         alert(`Inserted: ${r.inserted}, Skipped: ${r.skipped}`);
                         fetchFromSupabase(); fetchArchived();
                         e.target.value = '';
@@ -568,6 +562,41 @@ export default function App() {
           )}
 
         </div>
+
+        {/* CSV Upload Modal */}
+        {uploadModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
+            <div style={{ background: 'white', width: '100%', borderRadius: '16px 16px 0 0', padding: '24px 20px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
+              <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 6 }}>Upload {uploadModal.source === 'amex' ? 'Amex' : 'Chase'} CSV</div>
+              <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>Select account to import into</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                {manualAccountsDb.map(a => (
+                  <button key={a.id} onClick={() => setUploadAccount(a.name)} style={{
+                    padding: '12px 16px', borderRadius: 10, border: uploadAccount === a.name ? '1.5px solid #1a1a1a' : '0.5px solid #e0e0e0',
+                    background: uploadAccount === a.name ? '#f5f5f5' : 'white', textAlign: 'left', fontSize: 14, fontWeight: uploadAccount === a.name ? 600 : 400, cursor: 'pointer',
+                  }}>{a.name}</button>
+                ))}
+                <button onClick={() => { const n = prompt('New account name?'); if (n) setUploadAccount(n); }} style={{
+                  padding: '12px 16px', borderRadius: 10, border: uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ? '1.5px solid #1a1a1a' : '0.5px dashed #ccc',
+                  background: 'white', textAlign: 'left', fontSize: 14, color: '#888', cursor: 'pointer',
+                }}>+ New account{uploadAccount && !manualAccountsDb.find(a => a.name === uploadAccount) ?  : ''}</button>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setUploadModal(null)} style={{ flex: 1, padding: '13px', borderRadius: 10, border: '0.5px solid #e0e0e0', background: 'white', fontSize: 15, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={async () => {
+                  if (!uploadAccount) return;
+                  const csv = await uploadModal.file.text();
+                  const r = await fetch('/api/transactions/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv, source: uploadModal.source, accountName: uploadAccount }) }).then(r => r.json());
+                  setUploadModal(null);
+                  alert('Inserted: ' + r.inserted + ', Skipped: ' + r.skipped);
+                  fetchFromSupabase(); fetchArchived(); fetchManualAccounts();
+                }} style={{ flex: 2, padding: '13px', borderRadius: 10, border: 'none', background: '#1a1a1a', color: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+                  Import to {uploadAccount || '...'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,

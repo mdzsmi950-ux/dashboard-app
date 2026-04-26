@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 
 function parseCSV(text) {
-  // Handles quoted fields with commas/newlines inside
   const rows = [];
   let row = [], field = '', inQuote = false;
   for (let i = 0; i < text.length; i++) {
@@ -19,8 +18,7 @@ function parseCSV(text) {
   return rows;
 }
 
-function parseChase(text) {
-  // Columns: Transaction Date, Post Date, Description, Category, Type, Amount, Memo
+function parseChase(text, accountName) {
   const rows = parseCSV(text).slice(1);
   return rows.map(cols => {
     const date = cols[0]; const description = cols[2]; const amount = cols[5];
@@ -29,14 +27,13 @@ function parseChase(text) {
     return {
       date: `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`,
       merchant: description,
-      amount: parseFloat(amount) * -1, // Chase: negative = charge
-      account: 'Chase',
+      amount: parseFloat(amount) * -1,
+      account: accountName,
     };
   }).filter(Boolean);
 }
 
-function parseAmex(text) {
-  // Columns: Date, Description, Card Member, Account #, Amount, ...
+function parseAmex(text, accountName) {
   const rows = parseCSV(text).slice(1);
   return rows.map(cols => {
     const date = cols[0]; const description = cols[1]; const amount = cols[4];
@@ -45,15 +42,16 @@ function parseAmex(text) {
     return {
       date: `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`,
       merchant: description,
-      amount: parseFloat(amount), // Amex: positive = charge
-      account: 'Amex',
+      amount: parseFloat(amount),
+      account: accountName,
     };
   }).filter(Boolean);
 }
 
 export async function POST(req) {
-  const { csv, source } = await req.json();
-  const txns = source === 'amex' ? parseAmex(csv) : parseChase(csv);
+  const { csv, source, accountName } = await req.json();
+  const name = accountName || (source === 'amex' ? 'Amex' : 'Chase');
+  const txns = source === 'amex' ? parseAmex(csv, name) : parseChase(csv, name);
   let inserted = 0, skipped = 0;
 
   for (const t of txns) {
@@ -86,6 +84,21 @@ export async function POST(req) {
       archived: isInternalTransfer,
     });
     inserted++;
+  }
+
+  // Auto-create manual account entry if it doesn't exist
+  const { data: existingAccount } = await supabase
+    .from('manual_accounts')
+    .select('id')
+    .eq('name', name)
+    .maybeSingle();
+
+  if (!existingAccount) {
+    await supabase.from('manual_accounts').insert({
+      name,
+      balance: 0,
+      balance_date: new Date().toISOString().split('T')[0],
+    });
   }
 
   return NextResponse.json({ inserted, skipped });
