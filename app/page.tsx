@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Txn, Bill, BudgetIncome, ManualAccount, Category, Label } from './components/types';
-import { fmt, myShare, incomeShare, catColors, labelColors, monthLabel, today } from './components/constants';
+import { fmt, myShare, incomeShare, catColors, labelColors, monthLabel } from './components/constants';
 import BudgetAccount from './components/BudgetAccount';
 
 const IconTxn = () => (
@@ -163,7 +163,7 @@ export default function App() {
     const init = async () => {
       await Promise.all([fetchFromSupabase(), fetchArchived(), fetchManualAccounts(), fetchBudget()]);
       const lastSync = localStorage.getItem('last_plaid_sync');
-      const todayStr = new Date().toISOString().split('T')[0];
+      import { today } from '@/lib/...
       if (lastSync !== todayStr) {
         try { await fetch('/api/transactions'); } catch {}
         localStorage.setItem('last_plaid_sync', todayStr);
