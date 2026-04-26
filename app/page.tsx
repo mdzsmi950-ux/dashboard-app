@@ -498,8 +498,8 @@ export default function App() {
   return (
     <>
       <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" async />
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: theme.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', overflowX: 'hidden' }}>
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: TAB_H + 16 }}>
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: theme.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: 16 }}>
 
           {tab === 'transactions' && (
             <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
@@ -710,11 +710,11 @@ export default function App() {
         )}
 
         <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
           background: '#ffffff',
-          borderTop: '0.5px solid #f0f0f0', paddingBottom: 'env(safe-area-inset-bottom)',
+          borderTop: '0.5px solid #f0f0f0',
+          paddingBottom: 'env(safe-area-inset-bottom)',
           display: 'flex', justifyContent: 'space-evenly', alignItems: 'center',
-          height: TAB_H, zIndex: 9999,
+          height: TAB_H, flexShrink: 0,
         }}>
           {TABS.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setTab(id)} style={{
