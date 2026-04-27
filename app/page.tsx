@@ -759,19 +759,6 @@ const submitManualTxn = async () => {
                   </select>
                 </div>
 
-                <div>
-                  <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 6 }}>Category</div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
-                    {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => (
-                      <button key={cat}
-                        onClick={() => setAddTxnForm(f => ({ ...f, category: f.category === cat ? '' : cat }))}
-                        style={{ ...pill(addTxnForm.category === cat, catColors[cat]), fontSize: 13, padding: '6px 14px' }}>
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
               </div>
 
               <div style={{ display: 'flex', gap: 8 }}>
