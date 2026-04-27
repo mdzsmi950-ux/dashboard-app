@@ -398,7 +398,6 @@ const newTxn: Txn = {
   category: (addTxnForm.category as Category) || null,
   notes: null,
   archived: false,
-};
     };
     setTxns(prev => [newTxn, ...prev]);
     setShowAddTxn(false);
