@@ -102,7 +102,7 @@ function TxnCard({ t, updateField }: { t: Txn; updateField: (id: string, f: stri
           ))}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => {
+          {(['Needs', 'Wants', 'Income'] as Category[]).map(cat => {
             const disabled = !t.label || t.label === 'Ignore';
             return (
               <button key={cat} onClick={e => { e.preventDefault(); if (!disabled) updateField(t.id, 'category', cat); }}
