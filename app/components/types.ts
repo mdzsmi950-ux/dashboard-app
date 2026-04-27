@@ -1,5 +1,5 @@
 export type Label = 'Mine' | 'Joint' | 'Ignore';
-export type Category = 'Needs' | 'Wants' | 'Impulse' | 'Income';
+export type Category = 'Needs' | 'Wants' | 'Income';
 
 export type Txn = {
   id: string;
