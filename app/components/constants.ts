@@ -56,7 +56,6 @@ export const labelColors: Record<Label, { bg: string; border: string; color: str
 export const catColors: Record<Category, { bg: string; border: string; color: string }> = {
   Needs:   { bg: theme.accentBg,    border: theme.accentLight,    color: theme.accent    },
   Wants:   { bg: theme.wantsBg,     border: theme.wantsLight,     color: theme.wants     },
-  Impulse: { bg: theme.secondaryBg, border: theme.secondaryLight, color: theme.secondary },
   Income:  { bg: theme.accentBg,    border: theme.accentLight,    color: theme.accent    },
 };
 
