@@ -726,20 +726,20 @@ const submitManualTxn = async () => {
               <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 20 }}>Add Transaction</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
 
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 4 }}>Date</div>
-                    <input type="date" value={addTxnForm.date}
-                      onChange={e => setAddTxnForm(f => ({ ...f, date: e.target.value }))}
-                      style={{ width: '100%', fontSize: 14, padding: '10px 12px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 10, background: theme.bgSubtle, boxSizing: 'border-box' as const }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 4 }}>Amount</div>
-                    <input type="number" step="0.01" placeholder="42.50" value={addTxnForm.amount}
-                      onChange={e => setAddTxnForm(f => ({ ...f, amount: e.target.value }))}
-                      style={{ width: '100%', fontSize: 14, padding: '10px 12px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 10, background: theme.bgSubtle, boxSizing: 'border-box' as const }} />
-                  </div>
-                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+  <div>
+    <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 4 }}>Date</div>
+    <input type="date" value={addTxnForm.date}
+      onChange={e => setAddTxnForm(f => ({ ...f, date: e.target.value }))}
+      style={{ width: '100%', fontSize: 14, padding: '10px 12px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 10, background: theme.bgSubtle, boxSizing: 'border-box' as const }} />
+  </div>
+  <div>
+    <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 4 }}>Amount</div>
+    <input type="number" step="0.01" placeholder="42.50" value={addTxnForm.amount}
+      onChange={e => setAddTxnForm(f => ({ ...f, amount: e.target.value }))}
+      style={{ width: '100%', fontSize: 14, padding: '10px 12px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 10, background: theme.bgSubtle, boxSizing: 'border-box' as const }} />
+  </div>
+</div>
 
                 <div>
                   <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 4 }}>Merchant</div>
