@@ -237,7 +237,6 @@ function SpendingChart({ data }: { data: any }) {
   const todayX = data.current.length >= data.todayDay ? toX(data.todayDay, data.daysInCur) : null;
   const todayY = data.current.length >= data.todayDay ? toY(data.current[data.todayDay - 1]) : null;
 
-  // Y axis labels
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map(p => ({ val: maxVal * p, y: toY(maxVal * p) }));
 
   return (
@@ -252,8 +251,6 @@ function SpendingChart({ data }: { data: any }) {
           <stop offset="100%" stopColor="#E0C0CE" stopOpacity="0"/>
         </linearGradient>
       </defs>
-
-      {/* Y grid lines */}
       {yTicks.map(({ val, y }) => (
         <g key={val}>
           <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#f0f0f0" strokeWidth="0.5"/>
@@ -262,24 +259,16 @@ function SpendingChart({ data }: { data: any }) {
           </text>
         </g>
       ))}
-
-      {/* Last month area + line */}
       {lastArea && <path d={lastArea} fill="url(#lastGrad)"/>}
       {lastPath && <path d={lastPath} fill="none" stroke="#E0C0CE" strokeWidth="1.5" strokeLinejoin="round"/>}
-
-      {/* Current month area + line */}
       {curArea && <path d={curArea} fill="url(#curGrad)"/>}
       {curPath && <path d={curPath} fill="none" stroke="#B8D4C0" strokeWidth="2" strokeLinejoin="round"/>}
-
-      {/* Today dot */}
       {todayX !== null && todayY !== null && (
         <>
           <circle cx={todayX} cy={todayY} r="4" fill="#B8D4C0"/>
           <circle cx={todayX} cy={todayY} r="7" fill="none" stroke="#B8D4C0" strokeWidth="1" opacity="0.3"/>
         </>
       )}
-
-      {/* X axis day labels */}
       {[1, 8, 15, 22, data.daysInCur].map(d => (
         <text key={d} x={toX(d, data.daysInCur)} y={H - 4} textAnchor="middle" fontSize="9" fill="#bbb">{d}</text>
       ))}
@@ -307,6 +296,14 @@ export default function App() {
   const [uploadAccount, setUploadAccount] = useState('');
   const [plaidConnecting, setPlaidConnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // ── Manual add transaction ──────────────────────────────────────────────────
+  const [showAddTxn, setShowAddTxn] = useState(false);
+  const [addTxnForm, setAddTxnForm] = useState<{
+    date: string; amount: string; merchant: string; account: string;
+    category: Category | ''; label: Label | '';
+  }>({ date: today, amount: '', merchant: '', account: '', category: '', label: '' });
+  // ───────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     try {
@@ -370,9 +367,7 @@ export default function App() {
     try {
       const { hosted_link_url } = await fetch('/api/create-link-token', { method: 'POST' }).then(r => r.json());
       if (hosted_link_url) {
-        // Post to native iOS to open ASWebAuthenticationSession
         (window as any).webkit?.messageHandlers?.plaidLink?.postMessage(hosted_link_url);
-        // Fallback for web browser
         if (!(window as any).webkit?.messageHandlers?.plaidLink) {
           window.open(hosted_link_url, '_blank');
         }
@@ -389,6 +384,31 @@ export default function App() {
     } catch (e) { console.error(e); }
     setRefreshing(false);
   };
+
+  // ── Submit manual transaction ───────────────────────────────────────────────
+  const submitManualTxn = async () => {
+    const id = `manual_${Date.now()}`;
+    const newTxn: Txn = {
+      id,
+      date: addTxnForm.date,
+      amount: parseFloat(addTxnForm.amount),
+      merchant: addTxnForm.merchant,
+      account: addTxnForm.account || null,
+      label: (addTxnForm.label as Label) || null,
+      category: (addTxnForm.category as Category) || null,
+      archived: false,
+    };
+    setTxns(prev => [newTxn, ...prev]);
+    setShowAddTxn(false);
+    setAddTxnForm({ date: today, amount: '', merchant: '', account: '', category: '', label: '' });
+    await fetch('/api/transactions/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTxn),
+    });
+    fetchFromSupabase();
+  };
+  // ───────────────────────────────────────────────────────────────────────────
 
   const budgetApi = async (action: string, table: string, data: any) => {
     await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, table, data }) });
@@ -464,11 +484,10 @@ export default function App() {
       if (archiveSort === 'amount') return b.amount - a.amount;
       if (archiveSort === 'merchant') return a.merchant.localeCompare(b.merchant);
       if (archiveSort === 'txn_date') return b.date.localeCompare(a.date);
-      return 0; // 'date' = keep archived_at order from server
+      return 0;
     });
   }, [archivedTxns, archiveSearch, archiveSort]);
 
-  // Chart: cumulative daily spending for selected month vs previous month
   const chartData = useMemo(() => {
     const now = new Date();
     const curMonthStr = now.toISOString().slice(0, 7);
@@ -538,6 +557,12 @@ export default function App() {
                     <button onClick={refreshTransactions} disabled={refreshing} style={{ padding: '7px 10px', borderRadius: 20, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: refreshing ? theme.textFaint : theme.textMid, cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Refresh transactions">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                         <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                      </svg>
+                    </button>
+                    {/* ── Add transaction button ── */}
+                    <button onClick={() => setShowAddTxn(true)} style={{ padding: '7px 10px', borderRadius: 20, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: theme.accent, cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Add transaction">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                       </svg>
                     </button>
                     <button onClick={() => setShowArchive(true)} style={{ padding: '7px 10px', borderRadius: 20, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, color: theme.textMid, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
@@ -625,8 +650,6 @@ export default function App() {
           {tab === 'summary' && (
             <div style={{ padding: '0 20px', paddingTop: 'max(20px, env(safe-area-inset-top))', overflowX: 'hidden' }}>
               <div style={{ fontSize: 22, fontWeight: 700, color: theme.text, marginBottom: 20 }}>Summary</div>
-
-              {/* 1. YTD Income + Spending */}
               <div style={{ fontSize: 10, color: theme.textFaint, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Year to Date</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
                 <div>
@@ -638,11 +661,7 @@ export default function App() {
                   <div style={{ fontSize: 24, fontWeight: 700, color: theme.text }}>{fmt(ytdStats.total)}</div>
                 </div>
               </div>
-
-              {/* 2. YTD Pie chart */}
               <PieChart needs={ytdStats.needs} wants={ytdStats.wants} impulse={ytdStats.impulse} />
-
-              {/* 3 + 4. Monthly breakdown + chart */}
               <div style={{ borderTop: `0.5px solid ${theme.divider}`, paddingTop: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <div style={{ fontSize: 10, color: theme.textFaint, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly</div>
@@ -698,6 +717,91 @@ export default function App() {
           )}
 
         </div>
+
+        {/* ── Add Transaction Modal ───────────────────────────────────────────── */}
+        {showAddTxn && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
+            <div style={{ background: theme.bg, width: '100%', borderRadius: '16px 16px 0 0', padding: '24px 20px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom))', boxSizing: 'border-box' as const }}>
+              <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 20 }}>Add Transaction</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 4 }}>Date</div>
+                    <input type="date" value={addTxnForm.date}
+                      onChange={e => setAddTxnForm(f => ({ ...f, date: e.target.value }))}
+                      style={{ width: '100%', fontSize: 14, padding: '10px 12px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 10, background: theme.bgSubtle, boxSizing: 'border-box' as const }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 4 }}>Amount</div>
+                    <input type="number" step="0.01" placeholder="42.50" value={addTxnForm.amount}
+                      onChange={e => setAddTxnForm(f => ({ ...f, amount: e.target.value }))}
+                      style={{ width: '100%', fontSize: 14, padding: '10px 12px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 10, background: theme.bgSubtle, boxSizing: 'border-box' as const }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 4 }}>Merchant</div>
+                  <input type="text" placeholder="Whole Foods" value={addTxnForm.merchant}
+                    onChange={e => setAddTxnForm(f => ({ ...f, merchant: e.target.value }))}
+                    style={{ width: '100%', fontSize: 14, padding: '10px 12px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 10, background: theme.bgSubtle, boxSizing: 'border-box' as const }} />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 4 }}>Account</div>
+                  <select value={addTxnForm.account}
+                    onChange={e => setAddTxnForm(f => ({ ...f, account: e.target.value }))}
+                    style={{ width: '100%', fontSize: 14, padding: '10px 12px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 10, background: theme.bgSubtle, boxSizing: 'border-box' as const }}>
+                    <option value="">— optional —</option>
+                    {accountOptions.map(a => <option key={a} value={a}>{a}</option>)}
+                    {manualAccountsDb.map(a => accountOptions.includes(a.name) ? null : <option key={a.id} value={a.name}>{a.name}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 6 }}>Label</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {(['Mine', 'Joint', 'Ignore'] as Label[]).map(l => (
+                      <button key={l}
+                        onClick={() => setAddTxnForm(f => ({ ...f, label: f.label === l ? '' : l }))}
+                        style={{ ...pill(addTxnForm.label === l, labelColors[l]), fontSize: 13, padding: '6px 14px' }}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: theme.textFaint, marginBottom: 6 }}>Category</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
+                    {(['Needs', 'Wants', 'Impulse', 'Income'] as Category[]).map(cat => (
+                      <button key={cat}
+                        onClick={() => setAddTxnForm(f => ({ ...f, category: f.category === cat ? '' : cat }))}
+                        style={{ ...pill(addTxnForm.category === cat, catColors[cat]), fontSize: 13, padding: '6px 14px' }}>
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setShowAddTxn(false)}
+                  style={{ flex: 1, padding: '13px', borderRadius: 10, border: `0.5px solid ${theme.borderMid}`, background: theme.bg, fontSize: 15, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button
+                  disabled={!addTxnForm.merchant || !addTxnForm.amount}
+                  onClick={submitManualTxn}
+                  style={{ flex: 2, padding: '13px', borderRadius: 10, border: 'none', fontSize: 15, fontWeight: 600, cursor: addTxnForm.merchant && addTxnForm.amount ? 'pointer' : 'default', background: addTxnForm.merchant && addTxnForm.amount ? theme.accent : theme.borderMid, color: 'white' }}>
+                  Add Transaction
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* ─────────────────────────────────────────────────────────────────── */}
 
         {uploadModal && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
