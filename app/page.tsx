@@ -385,7 +385,7 @@ export default function App() {
     setRefreshing(false);
   };
 
-  // ── Submit manual transaction ───────────────────────────────────────────────
+// ── Submit manual transaction ───────────────────────────────────────────────
 const submitManualTxn = async () => {
     const id = `manual_${Date.now()}`;
     const newTxn: Txn = {
@@ -394,8 +394,8 @@ const submitManualTxn = async () => {
       amount: parseFloat(addTxnForm.amount),
       merchant: addTxnForm.merchant,
       account: addTxnForm.account || null,
-      label: (addTxnForm.label as Label) || null,
-      category: (addTxnForm.category as Category) || null,
+      label: null,
+      category: null,
       notes: '',
       archived: false,
     };
