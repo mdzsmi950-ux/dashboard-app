@@ -386,18 +386,18 @@ export default function App() {
   };
 
   // ── Submit manual transaction ───────────────────────────────────────────────
-  const submitManualTxn = async () => {
+const submitManualTxn = async () => {
     const id = `manual_${Date.now()}`;
-const newTxn: Txn = {
-  id,
-  date: addTxnForm.date,
-  amount: parseFloat(addTxnForm.amount),
-  merchant: addTxnForm.merchant,
-  account: addTxnForm.account || null,
-  label: (addTxnForm.label as Label) || null,
-  category: (addTxnForm.category as Category) || null,
-  notes: null,
-  archived: false,
+    const newTxn: Txn = {
+      id,
+      date: addTxnForm.date,
+      amount: parseFloat(addTxnForm.amount),
+      merchant: addTxnForm.merchant,
+      account: addTxnForm.account || null,
+      label: (addTxnForm.label as Label) || null,
+      category: (addTxnForm.category as Category) || null,
+      notes: '',
+      archived: false,
     };
     setTxns(prev => [newTxn, ...prev]);
     setShowAddTxn(false);
