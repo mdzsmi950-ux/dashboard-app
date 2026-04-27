@@ -158,15 +158,14 @@ function ArchiveCard({ t, onRecover }: { t: Txn; onRecover: (t: Txn) => void }) 
   );
 }
 
-function PieChart({ needs, wants, impulse }: { needs: number; wants: number; impulse: number }) {
-  const total = needs + wants + impulse;
+function PieChart({ needs, wants }: { needs: number; wants: number }) {
+  const total = needs + wants;
   if (total === 0) return null;
 
   const cx = 80, cy = 80, r = 70;
   const slices = [
     { value: needs,   color: theme.accent, label: 'Needs' },
     { value: wants,   color: theme.wants, label: 'Wants' },
-    { value: impulse, color: theme.secondary, label: 'Impulse' },
   ].filter(s => s.value > 0);
 
   let angle = -Math.PI / 2;
@@ -446,7 +445,6 @@ const submitManualTxn = async () => {
     income:  allTxns.reduce((s, t) => s + incomeShare(t), 0),
     needs:   allTxns.filter(t => t.category === 'Needs').reduce((s, t) => s + myShare(t), 0),
     wants:   allTxns.filter(t => t.category === 'Wants').reduce((s, t) => s + myShare(t), 0),
-    impulse: allTxns.filter(t => t.category === 'Impulse').reduce((s, t) => s + myShare(t), 0),
   }), [allTxns]);
 
   const monthlyTxns = useMemo(() => selectedMonth ? allTxns.filter(t => t.date.startsWith(selectedMonth)) : [], [allTxns, selectedMonth]);
@@ -456,7 +454,6 @@ const submitManualTxn = async () => {
     income:  monthlyTxns.reduce((s, t) => s + incomeShare(t), 0),
     needs:   monthlyTxns.filter(t => t.category === 'Needs').reduce((s, t) => s + myShare(t), 0),
     wants:   monthlyTxns.filter(t => t.category === 'Wants').reduce((s, t) => s + myShare(t), 0),
-    impulse: monthlyTxns.filter(t => t.category === 'Impulse').reduce((s, t) => s + myShare(t), 0),
   }), [monthlyTxns]);
 
   const accountOptions = useMemo(() =>
@@ -662,7 +659,7 @@ const submitManualTxn = async () => {
                   <div style={{ fontSize: 24, fontWeight: 700, color: theme.text }}>{fmt(ytdStats.total)}</div>
                 </div>
               </div>
-              <PieChart needs={ytdStats.needs} wants={ytdStats.wants} impulse={ytdStats.impulse} />
+              <PieChart needs={ytdStats.needs} wants={ytdStats.wants} />
               <div style={{ borderTop: `0.5px solid ${theme.divider}`, paddingTop: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <div style={{ fontSize: 10, color: theme.textFaint, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Monthly</div>
