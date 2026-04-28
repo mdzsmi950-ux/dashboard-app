@@ -584,15 +584,15 @@ const submitManualTxn = async () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, minWidth: 0 }}>
+                  <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ flex: 1, fontSize: 8, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, minWidth: 0 }}>
                     <option value="All">All accounts</option>
                     {accountOptions.map(a => <option key={a} value={a}>{a}</option>)}
                   </select>
-                  <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, minWidth: 0 }}>
+                  <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ flex: 1, fontSize: 8, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, minWidth: 0 }}>
                     <option value="All">All months</option>
                     {Array.from(new Set(txns.map(t => t.date.slice(0, 7)))).sort((a, b) => b.localeCompare(a)).map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
                   </select>
-                  <select value={txnSort} onChange={e => setTxnSort(e.target.value as any)} style={{ flex: 1, fontSize: 12, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, minWidth: 0 }}>
+                  <select value={txnSort} onChange={e => setTxnSort(e.target.value as any)} style={{ flex: 1, fontSize: 8, padding: '7px 10px', border: `0.5px solid ${theme.borderMid}`, borderRadius: 8, background: theme.bgSubtle, minWidth: 0 }}>
                     <option value="date">Date</option>
                     <option value="amount">Amount</option>
                     <option value="merchant">Merchant</option>
